@@ -30,33 +30,7 @@ type PresignUploadInput struct {
 	ContentType string
 }
 
-type PresignUploadOutput struct {
-	MediaID   string
-	UploadURL string
-}
-
-type ConfirmUploadInput struct {
-	MediaID string
-}
-
-type ConfirmUploadOutput struct {
-	MediaID string
-	Status  MediaStatus
-}
-
 func NewMediaKey(filename string) string {
 	ext := filepath.Ext(filename)
 	return "media/" + uuid.NewString() + ext
-}
-
-func NewPendingMedia(key, contentType string) *Media {
-	now := time.Now()
-	return &Media{
-		ID:          uuid.NewString(),
-		Key:         key,
-		ContentType: contentType,
-		Status:      MediaStatusPending,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
 }
