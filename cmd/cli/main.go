@@ -11,8 +11,8 @@ import (
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "cli",
-		Short: "Go CLI - cmd commands",
-		Long:  "Go CLI provides commands for cmd tasks",
+		Short: "Analyse CLI - cmd commands",
+		Long:  "Analyse CLI provides commands for cmd tasks",
 	}
 
 	rootCmd.AddCommand(

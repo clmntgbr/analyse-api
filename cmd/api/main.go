@@ -18,8 +18,8 @@ func main() {
 	db := config.ConnectDatabase(env)
 
 	app := fiber.New(fiber.Config{
-		AppName:       "Go API",
-		ServerHeader:  "Go API",
+		AppName:       "Analyse API",
+		ServerHeader:  "Analyse API",
 		CaseSensitive: true,
 		StrictRouting: true,
 		UnescapePath:  true,
