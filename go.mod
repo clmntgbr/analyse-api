@@ -30,12 +30,14 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 )
 
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/clerk/clerk-sdk-go/v2 v2.6.0
+	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/gofiber/fiber/v3 v3.2.0
 	github.com/gofiber/schema v1.7.1 // indirect

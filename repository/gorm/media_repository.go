@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"errors"
 	"go-api/domain/entity"
 	"go-api/domain/repository"
 	"go-api/infrastructure/paginate"
@@ -49,4 +50,16 @@ func (r *mediaRepository) GetByUserID(ctx context.Context, userID uuid.UUID, que
 	}
 
 	return medias, total, nil
+}
+
+func (r *mediaRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Media, error) {
+	var media entity.Media
+	err := dbWithContext(ctx, r.db).Where("id = ?", id).First(&media).Error
+	if err != nil {
+		return nil, err
+	}
+	if media.ID == uuid.Nil {
+		return nil, errors.New("media not found")
+	}
+	return &media, nil
 }

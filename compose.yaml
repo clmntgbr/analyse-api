@@ -97,6 +97,24 @@ services:
     networks:
       - api
 
+  rabbitmq:
+    container_name: broker
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5000:5672"
+      - "5001:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is required}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is required}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - api
+    restart: unless-stopped
+
 volumes:
   go-modules:
   database_data:

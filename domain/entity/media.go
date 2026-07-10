@@ -13,8 +13,8 @@ type Media struct {
 	UserID uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
 	User   User      `gorm:"foreignKey:UserID" json:"user"`
 
-	Key string `gorm:"uniqueIndex;not null" json:"key"`
-
+	Key         string `gorm:"uniqueIndex;not null" json:"key"`
+	Thumbnail   string `gorm:"not null" json:"thumbnail"`
 	ContentType string `gorm:"not null" json:"content_type"`
 	Size        int64  `gorm:"not null" json:"size"`
 

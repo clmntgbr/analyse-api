@@ -10,6 +10,7 @@ import (
 	"go-api/usecase/auth"
 	"go-api/usecase/clerk"
 	"go-api/usecase/media"
+	"go-api/usecase/thumbnail"
 	"go-api/usecase/user"
 	"log"
 
@@ -52,6 +53,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	createMediaUseCase := media.NewCreateMediaUseCase(&mediaRepo)
 	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
 	getMediasUseCase := media.NewGetMediasUseCase(&mediaRepo)
+	generateImageThumbnailUseCaseUseCase := thumbnail.NewGenerateImageThumbnailUseCase(storageClient)
+	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCaseUseCase)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -74,6 +77,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		),
 		MinIOHandler: handler.NewMinIOHandler(
 			createMediaUseCase,
+			generateThumbnailUseCase,
 		),
 		UserHandler: handler.NewUserHandler(),
 		MediaHandler: handler.NewMediaHandler(

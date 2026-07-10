@@ -12,13 +12,18 @@ import (
 )
 
 type MinIOHandler struct {
-	createMediaUseCase *media.CreateMediaUseCase
+	createMediaUseCase       *media.CreateMediaUseCase
+	generateThumbnailUseCase *media.GenerateThumbnailUseCase
 }
 
 func NewMinIOHandler(
 	createMediaUseCase *media.CreateMediaUseCase,
+	generateThumbnailUseCase *media.GenerateThumbnailUseCase,
 ) *MinIOHandler {
-	return &MinIOHandler{createMediaUseCase: createMediaUseCase}
+	return &MinIOHandler{
+		createMediaUseCase:       createMediaUseCase,
+		generateThumbnailUseCase: generateThumbnailUseCase,
+	}
 }
 
 func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
@@ -45,9 +50,15 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 			continue
 		}
 
-		_, err = h.createMediaUseCase.Execute(c.Context(), userID, fileKey, record.S3.Object.ContentType, record.S3.Object.Size)
+		media, err := h.createMediaUseCase.Execute(c.Context(), userID, fileKey, record.S3.Object.ContentType, record.S3.Object.Size)
 		if err != nil {
 			log.Printf("MinIO webhook: failed to create media for key %q: %v", fileKey, err)
+			continue
+		}
+
+		err = h.generateThumbnailUseCase.Execute(c.Context(), userID, media.ID)
+		if err != nil {
+			log.Printf("MinIO webhook: failed to generate thumbnail for key %q: %v", fileKey, err)
 			continue
 		}
 	}
