@@ -5,23 +5,32 @@ import (
 	"go-api/handler/context"
 	mediadto "go-api/infrastructure/media"
 	"go-api/infrastructure/paginate"
+	"go-api/infrastructure/storage"
 	"go-api/presenter"
 	"go-api/usecase/media"
+	"log"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 )
 
 type MediaHandler struct {
+	storage                           *storage.MinIOStorage
 	generatePresignedUploadUrlUseCase *media.GeneratePresignedUploadUrlUseCase
+	getMediaUseCase                   *media.GetMediaUseCase
 	getMediasUseCase                  *media.GetMediasUseCase
 }
 
 func NewMediaHandler(
+	storage *storage.MinIOStorage,
 	generatePresignedUploadUrlUseCase *media.GeneratePresignedUploadUrlUseCase,
+	getMediaUseCase *media.GetMediaUseCase,
 	getMediasUseCase *media.GetMediasUseCase,
 ) *MediaHandler {
 	return &MediaHandler{
+		storage:                           storage,
 		generatePresignedUploadUrlUseCase: generatePresignedUploadUrlUseCase,
+		getMediaUseCase:                   getMediaUseCase,
 		getMediasUseCase:                  getMediasUseCase,
 	}
 }
@@ -87,4 +96,44 @@ func (h *MediaHandler) GetMedias(c fiber.Ctx) error {
 	}
 
 	return c.JSON(paginate.NewPaginateResponse(presenter.NewMediaListResponses(medias), int(total), query))
+}
+
+func (h *MediaHandler) GetThumbnail(c fiber.Ctx) error {
+	user, err := context.GetUser(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+		})
+	}
+
+	mediaID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		log.Printf("MediaHandler: failed to parse media ID: %v", err)
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	m, err := h.getMediaUseCase.Execute(c.Context(), user.ID, mediaID)
+	if err != nil {
+		log.Printf("MediaHandler: failed to get media: %v", err)
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	if m.Thumbnail == "" {
+		log.Printf("MediaHandler: thumbnail not found for media ID: %v", mediaID)
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	reader, err := h.storage.GetThumbnail(c.Context(), mediadto.NewThumbnailObjectKey(user.ID, m.ID))
+	if err != nil {
+		log.Printf("MediaHandler: failed to get thumbnail: %v", err)
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+	defer reader.Close()
+
+	log.Printf("MediaHandler: thumbnail found for media ID: %v", mediaID)
+
+	c.Set("Content-Type", "image/jpeg")
+	c.Set("Cache-Control", "public, max-age=86400")
+
+	return c.SendStream(reader)
 }

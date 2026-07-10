@@ -47,4 +47,5 @@ func setupUsersRoutes(api fiber.Router, container *wire.Container) {
 func setupMediaRoutes(api fiber.Router, container *wire.Container) {
 	api.Post("/media/presign-upload-url", container.MediaHandler.GeneratePresignedUploadUrl)
 	api.Get("/medias", container.MediaHandler.GetMedias)
+	api.Get("/medias/:id/thumbnail", container.MediaHandler.GetThumbnail)
 }

@@ -96,6 +96,18 @@ func (s *MinIOStorage) Get(ctx context.Context, key string) (io.ReadCloser, erro
 	return out.Body, nil
 }
 
+func (s *MinIOStorage) GetThumbnail(ctx context.Context, key string) (io.ReadCloser, error) {
+	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.thumbnailBucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("thumbnail not found: %w", err)
+	}
+
+	return out.Body, nil
+}
+
 func (s *MinIOStorage) Delete(ctx context.Context, key string) error {
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),

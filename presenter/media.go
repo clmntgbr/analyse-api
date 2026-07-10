@@ -27,10 +27,18 @@ func NewMediaListResponse(media *entity.Media) *MediaListResponse {
 	return &MediaListResponse{
 		ID:        media.ID.String(),
 		Key:       media.Key,
-		Thumbnail: media.Thumbnail,
+		Thumbnail: thumbnailURL(media),
 		CreatedAt: media.CreatedAt,
 		UpdatedAt: media.UpdatedAt,
 	}
+}
+
+func thumbnailURL(media *entity.Media) string {
+	if media.Thumbnail == "" {
+		return ""
+	}
+
+	return "/api/medias/" + media.ID.String() + "/thumbnail"
 }
 
 func NewMediaListResponses(medias []*entity.Media) []*MediaListResponse {
