@@ -80,6 +80,14 @@ func NewObjectKeyFromFilename(userID uuid.UUID, filename string) string {
 	return NewObjectKey(userID, NewFileKey(filename))
 }
 
+func NewThumbnailFileKey(mediaID uuid.UUID) string {
+	return mediaID.String() + ".jpg"
+}
+
+func NewThumbnailObjectKey(userID uuid.UUID, mediaID uuid.UUID) string {
+	return NewObjectKey(userID, NewThumbnailFileKey(mediaID))
+}
+
 func DecodeObjectKey(key string) (string, error) {
 	decoded, err := url.QueryUnescape(key)
 	if err != nil {

@@ -76,6 +76,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			deleteUserByClerkIDUseCase,
 		),
 		MinIOHandler: handler.NewMinIOHandler(
+			env.StorageBucket,
 			createMediaUseCase,
 			generateThumbnailUseCase,
 		),

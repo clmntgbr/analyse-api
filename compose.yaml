@@ -22,6 +22,8 @@ services:
       - go-modules:/go/pkg/mod
     env_file:
       - .env
+    environment:
+      STORAGE_INTERNAL_ENDPOINT: http://minio:9000
     networks:
       - api
     restart: unless-stopped
@@ -86,6 +88,7 @@ services:
       /bin/sh -c "
       mc alias set myminio http://minio:9000 devuser devpassword;
       mc mb myminio/${STORAGE_BUCKET} --ignore-existing;
+      mc mb myminio/${STORAGE_THUMBNAIL_BUCKET:-thumbnails} --ignore-existing;
       mc admin config set myminio notify_webhook:analyze endpoint='http://api:3000/webhooks/minio/object-created' auth_token='${MINIO_WEBHOOK_SECRET}';
       mc admin service restart myminio --json;
       sleep 5;

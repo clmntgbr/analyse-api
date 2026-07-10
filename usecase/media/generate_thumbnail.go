@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"go-api/domain/repository"
+	mediadto "go-api/infrastructure/media"
 	"go-api/infrastructure/storage"
 	"go-api/usecase/thumbnail"
 	"strings"
@@ -28,7 +29,7 @@ func (uc *GenerateThumbnailUseCase) Execute(ctx context.Context, userID uuid.UUI
 		return errors.New("media not found")
 	}
 
-	original, err := uc.storage.Get(ctx, userID.String()+"/"+media.Key)
+	original, err := uc.storage.Get(ctx, mediadto.NewObjectKey(userID, media.Key))
 	if err != nil {
 		return errors.New("failed to fetch original")
 	}
@@ -44,8 +45,14 @@ func (uc *GenerateThumbnailUseCase) Execute(ctx context.Context, userID uuid.UUI
 		return err
 	}
 
-	thumbKey := userID.String() + "/thumbnails/" + media.ID.String() + ".jpg"
-	if err := uc.storage.Put(ctx, thumbKey, bytes.NewReader(thumbBytes), int64(len(thumbBytes)), "image/jpeg"); err != nil {
+	thumbKey := mediadto.NewThumbnailFileKey(media.ID)
+	if err := uc.storage.PutThumbnail(
+		ctx,
+		mediadto.NewThumbnailObjectKey(userID, media.ID),
+		bytes.NewReader(thumbBytes),
+		int64(len(thumbBytes)),
+		"image/jpeg",
+	); err != nil {
 		return errors.New("failed to store thumbnail")
 	}
 

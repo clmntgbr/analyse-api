@@ -14,12 +14,37 @@ import (
 )
 
 type MinIOStorage struct {
-	client     *s3.Client
-	presignCli *s3.PresignClient
-	bucket     string
+	client          *s3.Client
+	presignCli      *s3.PresignClient
+	bucket          string
+	thumbnailBucket string
 }
 
 func NewMinIOStorage(cfg *config.Config) (*MinIOStorage, error) {
+	internalEndpoint := cfg.StorageInternalEndpoint
+	if internalEndpoint == "" {
+		internalEndpoint = cfg.StorageEndpoint
+	}
+
+	internalClient, err := newS3Client(cfg, internalEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	publicClient, err := newS3Client(cfg, cfg.StorageEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MinIOStorage{
+		client:          internalClient,
+		presignCli:      s3.NewPresignClient(publicClient),
+		bucket:          cfg.StorageBucket,
+		thumbnailBucket: cfg.StorageThumbnailBucket,
+	}, nil
+}
+
+func newS3Client(cfg *config.Config, endpoint string) (*s3.Client, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(cfg.StorageRegion),
 		awsconfig.WithCredentialsProvider(
@@ -30,23 +55,25 @@ func NewMinIOStorage(cfg *config.Config) (*MinIOStorage, error) {
 		return nil, fmt.Errorf("failed to load storage config: %w", err)
 	}
 
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		if cfg.StorageEndpoint != "" {
-			o.BaseEndpoint = aws.String(cfg.StorageEndpoint)
+	return s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		if endpoint != "" {
+			o.BaseEndpoint = aws.String(endpoint)
 		}
 		o.UsePathStyle = cfg.StorageUsePathStyle
-	})
-
-	return &MinIOStorage{
-		client:     client,
-		presignCli: s3.NewPresignClient(client),
-		bucket:     cfg.StorageBucket,
-	}, nil
+	}), nil
 }
 
 func (s *MinIOStorage) Put(ctx context.Context, key string, r io.Reader, size int64, contentType string) error {
+	return s.putObject(ctx, s.bucket, key, r, size, contentType)
+}
+
+func (s *MinIOStorage) PutThumbnail(ctx context.Context, key string, r io.Reader, size int64, contentType string) error {
+	return s.putObject(ctx, s.thumbnailBucket, key, r, size, contentType)
+}
+
+func (s *MinIOStorage) putObject(ctx context.Context, bucket, key string, r io.Reader, size int64, contentType string) error {
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:        aws.String(s.bucket),
+		Bucket:        aws.String(bucket),
 		Key:           aws.String(key),
 		Body:          r,
 		ContentLength: aws.Int64(size),

@@ -25,12 +25,14 @@ type Config struct {
 	CORSMaxAge           int
 	RateLimitMax         int
 
-	StorageEndpoint     string
-	StorageRegion       string
+	StorageEndpoint         string
+	StorageInternalEndpoint string
+	StorageRegion           string
 	StorageAccessKey    string
 	StorageSecretKey    string
-	StorageBucket       string
-	StorageUsePathStyle bool
+	StorageBucket           string
+	StorageThumbnailBucket  string
+	StorageUsePathStyle     bool
 	MinIOWebhookSecret  string
 }
 
@@ -53,12 +55,14 @@ func Load() *Config {
 		CORSMaxAge:           getEnvInt("CORS_MAX_AGE"),
 		RateLimitMax:         getEnvInt("RATE_LIMIT_MAX"),
 
-		StorageEndpoint:     getEnvOrDefault("STORAGE_ENDPOINT", ""),
-		StorageRegion:       getEnvOrDefault("STORAGE_REGION", "us-east-1"),
+		StorageEndpoint:         getEnvOrDefault("STORAGE_ENDPOINT", ""),
+		StorageInternalEndpoint: getEnvOrDefault("STORAGE_INTERNAL_ENDPOINT", ""),
+		StorageRegion:           getEnvOrDefault("STORAGE_REGION", "us-east-1"),
 		StorageAccessKey:    getEnv("STORAGE_ACCESS_KEY"),
 		StorageSecretKey:    getEnv("STORAGE_SECRET_KEY"),
-		StorageBucket:       getEnv("STORAGE_BUCKET"),
-		StorageUsePathStyle: getEnvBool("STORAGE_USE_PATH_STYLE"),
+		StorageBucket:          getEnv("STORAGE_BUCKET"),
+		StorageThumbnailBucket: getEnvOrDefault("STORAGE_THUMBNAIL_BUCKET", "thumbnails"),
+		StorageUsePathStyle:    getEnvBool("STORAGE_USE_PATH_STYLE"),
 		MinIOWebhookSecret:  getEnvOrDefault("MINIO_WEBHOOK_SECRET", ""),
 	}
 }

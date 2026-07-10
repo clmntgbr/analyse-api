@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"strings"
 
 	mediadto "go-api/infrastructure/media"
 	miniodto "go-api/infrastructure/minio"
@@ -12,15 +13,18 @@ import (
 )
 
 type MinIOHandler struct {
+	mediaBucket              string
 	createMediaUseCase       *media.CreateMediaUseCase
 	generateThumbnailUseCase *media.GenerateThumbnailUseCase
 }
 
 func NewMinIOHandler(
+	mediaBucket string,
 	createMediaUseCase *media.CreateMediaUseCase,
 	generateThumbnailUseCase *media.GenerateThumbnailUseCase,
 ) *MinIOHandler {
 	return &MinIOHandler{
+		mediaBucket:              mediaBucket,
 		createMediaUseCase:       createMediaUseCase,
 		generateThumbnailUseCase: generateThumbnailUseCase,
 	}
@@ -38,6 +42,20 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 	}
 
 	for _, record := range event.Records {
+		if record.S3.Bucket.Name != h.mediaBucket {
+			continue
+		}
+
+		decodedKey, err := mediadto.DecodeObjectKey(record.S3.Object.Key)
+		if err != nil {
+			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
+			continue
+		}
+
+		if strings.Contains(decodedKey, "/thumbnails/") {
+			continue
+		}
+
 		userID, err := mediadto.UserIDFromKey(record.S3.Object.Key)
 		if err != nil {
 			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
@@ -50,13 +68,13 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 			continue
 		}
 
-		media, err := h.createMediaUseCase.Execute(c.Context(), userID, fileKey, record.S3.Object.ContentType, record.S3.Object.Size)
+		createdMedia, err := h.createMediaUseCase.Execute(c.Context(), userID, fileKey, record.S3.Object.ContentType, record.S3.Object.Size)
 		if err != nil {
 			log.Printf("MinIO webhook: failed to create media for key %q: %v", fileKey, err)
 			continue
 		}
 
-		err = h.generateThumbnailUseCase.Execute(c.Context(), userID, media.ID)
+		err = h.generateThumbnailUseCase.Execute(c.Context(), userID, createdMedia.ID)
 		if err != nil {
 			log.Printf("MinIO webhook: failed to generate thumbnail for key %q: %v", fileKey, err)
 			continue
