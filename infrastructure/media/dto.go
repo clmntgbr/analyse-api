@@ -33,9 +33,17 @@ type PresignUploadInput struct {
 	ContentType string
 }
 
-func NewMediaKey(userID uuid.UUID, filename string) string {
+func NewFileKey(filename string) string {
 	ext := filepath.Ext(filename)
-	return userID.String() + "/" + uuid.NewString() + ext
+	return uuid.NewString() + ext
+}
+
+func NewObjectKey(userID uuid.UUID, fileKey string) string {
+	return userID.String() + "/" + fileKey
+}
+
+func NewObjectKeyFromFilename(userID uuid.UUID, filename string) string {
+	return NewObjectKey(userID, NewFileKey(filename))
 }
 
 func DecodeObjectKey(key string) (string, error) {
@@ -59,4 +67,18 @@ func UserIDFromKey(encodedKey string) (uuid.UUID, error) {
 	}
 
 	return uuid.Parse(userID)
+}
+
+func FileKeyFromObjectKey(encodedKey string) (string, error) {
+	key, err := DecodeObjectKey(encodedKey)
+	if err != nil {
+		return "", err
+	}
+
+	_, fileKey, ok := strings.Cut(key, "/")
+	if !ok {
+		return "", fmt.Errorf("invalid media key: %q", key)
+	}
+
+	return fileKey, nil
 }

@@ -33,21 +33,21 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 	}
 
 	for _, record := range event.Records {
-		key, err := mediadto.DecodeObjectKey(record.S3.Object.Key)
-		if err != nil {
-			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
-			continue
-		}
-
 		userID, err := mediadto.UserIDFromKey(record.S3.Object.Key)
 		if err != nil {
 			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
 			continue
 		}
 
-		_, err = h.createMediaUseCase.Execute(c.Context(), userID, key, record.S3.Object.ContentType, record.S3.Object.Size)
+		fileKey, err := mediadto.FileKeyFromObjectKey(record.S3.Object.Key)
 		if err != nil {
-			log.Printf("MinIO webhook: failed to create media for key %q: %v", key, err)
+			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
+			continue
+		}
+
+		_, err = h.createMediaUseCase.Execute(c.Context(), userID, fileKey, record.S3.Object.ContentType, record.S3.Object.Size)
+		if err != nil {
+			log.Printf("MinIO webhook: failed to create media for key %q: %v", fileKey, err)
 			continue
 		}
 	}

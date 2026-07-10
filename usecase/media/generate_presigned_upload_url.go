@@ -22,9 +22,9 @@ func NewGeneratePresignedUploadUrlUseCase(
 }
 
 func (uc *GeneratePresignedUploadUrlUseCase) Execute(ctx context.Context, userID uuid.UUID, input mediadto.PresignUploadInput) (string, error) {
-	key := mediadto.NewMediaKey(userID, input.Filename)
+	objectKey := mediadto.NewObjectKeyFromFilename(userID, input.Filename)
 
-	url, err := uc.storage.PresignedPutURL(ctx, key, 15*time.Minute)
+	url, err := uc.storage.PresignedPutURL(ctx, objectKey, 15*time.Minute)
 	if err != nil {
 		return "", err
 	}
