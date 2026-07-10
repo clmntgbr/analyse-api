@@ -30,7 +30,7 @@ type PresignUploadInput struct {
 	ContentType string
 }
 
-func NewMediaKey(filename string) string {
+func NewMediaKey(userID uuid.UUID, filename string) string {
 	ext := filepath.Ext(filename)
-	return "media/" + uuid.NewString() + ext
+	return userID.String() + "/" + uuid.NewString() + ext
 }

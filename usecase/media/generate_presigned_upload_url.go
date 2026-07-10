@@ -5,6 +5,8 @@ import (
 	mediadto "go-api/infrastructure/media"
 	"go-api/infrastructure/storage"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type GeneratePresignedUploadUrlUseCase struct {
@@ -19,8 +21,8 @@ func NewGeneratePresignedUploadUrlUseCase(
 	}
 }
 
-func (uc *GeneratePresignedUploadUrlUseCase) Execute(ctx context.Context, input mediadto.PresignUploadInput) (string, error) {
-	key := mediadto.NewMediaKey(input.Filename)
+func (uc *GeneratePresignedUploadUrlUseCase) Execute(ctx context.Context, userID uuid.UUID, input mediadto.PresignUploadInput) (string, error) {
+	key := mediadto.NewMediaKey(userID, input.Filename)
 
 	url, err := uc.storage.PresignedPutURL(ctx, key, 15*time.Minute)
 	if err != nil {
