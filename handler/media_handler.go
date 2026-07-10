@@ -8,7 +8,8 @@ import (
 	"go-api/infrastructure/storage"
 	"go-api/presenter"
 	"go-api/usecase/media"
-	"log"
+	"io"
+	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -108,34 +109,28 @@ func (h *MediaHandler) GetThumbnail(c fiber.Ctx) error {
 
 	mediaID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		log.Printf("MediaHandler: failed to parse media ID: %v", err)
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	media, err := h.getMediaUseCase.Execute(c.Context(), user.ID, mediaID)
-	if err != nil {
-		log.Printf("MediaHandler: failed to get media: %v", err)
-		return c.SendStatus(fiber.StatusNotFound)
-	}
-
-	log.Printf("MediaHandler: media found: %+v", media)
-
-	if media.Thumbnail == "" {
-		log.Printf("MediaHandler: thumbnail not found for media ID: %v", mediaID)
+	if err != nil || media.Thumbnail == "" {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	reader, err := h.storage.GetThumbnail(c.Context(), mediadto.NewThumbnailObjectKey(user.ID, media.ID))
 	if err != nil {
-		log.Printf("MediaHandler: failed to get thumbnail: %v", err)
 		return c.SendStatus(fiber.StatusNotFound)
 	}
-	defer reader.Close()
 
-	log.Printf("MediaHandler: thumbnail found for media ID: %v", mediaID)
+	body, err := io.ReadAll(reader)
+	reader.Close()
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 
 	c.Set("Content-Type", "image/jpeg")
 	c.Set("Cache-Control", "public, max-age=86400")
+	c.Set("Content-Length", strconv.Itoa(len(body)))
 
-	return c.SendStream(reader)
+	return c.Send(body)
 }
