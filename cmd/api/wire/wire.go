@@ -39,9 +39,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	}
 	log.Println("🚀 Storage client created")
 
-	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
-
 	userRepo := repoGorm.NewUserRepository(db)
+	mediaRepo := repoGorm.NewMediaRepository(db)
 
 	validateTokenUseCase := auth.NewValidateTokenUseCase(jwksProvider, &userRepo)
 	fetchUserUseCase := clerk.NewFetchUserUseCase(env)
@@ -49,6 +48,9 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	createUserUseCase := user.NewCreateUserUseCase(&userRepo)
 	updateUserUseCase := user.NewUpdateUserUseCase(&userRepo)
 	deleteUserByClerkIDUseCase := user.NewDeleteUserByClerkIDUseCase(&userRepo)
+
+	createMediaUseCase := media.NewCreateMediaUseCase(&mediaRepo)
+	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -69,8 +71,10 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			updateUserUseCase,
 			deleteUserByClerkIDUseCase,
 		),
-		MinIOHandler: handler.NewMinIOHandler(),
-		UserHandler:  handler.NewUserHandler(),
+		MinIOHandler: handler.NewMinIOHandler(
+			createMediaUseCase,
+		),
+		UserHandler: handler.NewUserHandler(),
 		MediaHandler: handler.NewMediaHandler(
 			generatePresignedUploadUrlUseCase,
 		),

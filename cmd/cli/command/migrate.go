@@ -21,6 +21,7 @@ func NewMigrateCommand() *cobra.Command {
 			err := db.Transaction(func(tx *gorm.DB) error {
 				return tx.AutoMigrate(
 					&entity.User{},
+					&entity.Media{},
 				)
 			})
 

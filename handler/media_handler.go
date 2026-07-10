@@ -1,8 +1,8 @@
 package handler
 
 import (
-	mediadto "go-api/infrastructure/media"
 	"go-api/handler/context"
+	mediadto "go-api/infrastructure/media"
 	"go-api/presenter"
 	"go-api/usecase/media"
 

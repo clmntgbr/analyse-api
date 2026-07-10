@@ -4,15 +4,21 @@ import (
 	"encoding/json"
 	"log"
 
+	mediadto "go-api/infrastructure/media"
 	miniodto "go-api/infrastructure/minio"
+	"go-api/usecase/media"
 
 	"github.com/gofiber/fiber/v3"
 )
 
-type MinIOHandler struct{}
+type MinIOHandler struct {
+	createMediaUseCase *media.CreateMediaUseCase
+}
 
-func NewMinIOHandler() *MinIOHandler {
-	return &MinIOHandler{}
+func NewMinIOHandler(
+	createMediaUseCase *media.CreateMediaUseCase,
+) *MinIOHandler {
+	return &MinIOHandler{createMediaUseCase: createMediaUseCase}
 }
 
 func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
@@ -27,10 +33,23 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 	}
 
 	for _, record := range event.Records {
-		log.Printf(
-			"MinIO webhook received: key=%s",
-			record.S3.Object.Key,
-		)
+		key, err := mediadto.DecodeObjectKey(record.S3.Object.Key)
+		if err != nil {
+			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
+			continue
+		}
+
+		userID, err := mediadto.UserIDFromKey(record.S3.Object.Key)
+		if err != nil {
+			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
+			continue
+		}
+
+		_, err = h.createMediaUseCase.Execute(c.Context(), userID, key, record.S3.Object.ContentType, record.S3.Object.Size)
+		if err != nil {
+			log.Printf("MinIO webhook: failed to create media for key %q: %v", key, err)
+			continue
+		}
 	}
 
 	return c.SendStatus(fiber.StatusOK)
