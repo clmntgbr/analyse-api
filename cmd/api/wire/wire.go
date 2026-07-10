@@ -9,6 +9,7 @@ import (
 	repoGorm "go-api/repository/gorm"
 	"go-api/usecase/auth"
 	"go-api/usecase/clerk"
+	"go-api/usecase/media"
 	"go-api/usecase/user"
 	"log"
 
@@ -20,6 +21,7 @@ type Container struct {
 	ClerkMiddleware        *middleware.ClerkMiddleware
 	ClerkHandler           *handler.ClerkHandler
 	UserHandler            *handler.UserHandler
+	MediaHandler           *handler.MediaHandler
 }
 
 func NewContainer(db *gorm.DB, env *config.Config) *Container {
@@ -29,11 +31,13 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	}
 	log.Println("🚀 JWKS provider created")
 
-	_, err = storage.NewMinIOStorage(env)
+	storageClient, err := storage.NewMinIOStorage(env)
 	if err != nil {
 		log.Fatalf("failed to create storage client: %v", err)
 	}
 	log.Println("🚀 Storage client created")
+
+	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
 
 	userRepo := repoGorm.NewUserRepository(db)
 
@@ -62,5 +66,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			deleteUserByClerkIDUseCase,
 		),
 		UserHandler: handler.NewUserHandler(),
+		MediaHandler: handler.NewMediaHandler(
+			generatePresignedUploadUrlUseCase,
+		),
 	}
 }

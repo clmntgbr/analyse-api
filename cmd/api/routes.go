@@ -30,8 +30,13 @@ func setupAPIRoutes(app *fiber.App, container *wire.Container) {
 
 	api.Use(container.AuthenticateMiddleware.Protected())
 	setupUsersRoutes(api, container)
+	setupMediaRoutes(api, container)
 }
 
 func setupUsersRoutes(api fiber.Router, container *wire.Container) {
 	api.Get("/users/me", container.UserHandler.GetUser)
+}
+
+func setupMediaRoutes(api fiber.Router, container *wire.Container) {
+	api.Post("/media/presign-upload-url", container.MediaHandler.GeneratePresignedUploadUrl)
 }
