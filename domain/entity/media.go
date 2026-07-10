@@ -26,5 +26,5 @@ type Media struct {
 }
 
 func (Media) TableName() string {
-	return "media"
+	return "medias"
 }

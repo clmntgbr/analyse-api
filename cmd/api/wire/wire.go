@@ -51,6 +51,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 
 	createMediaUseCase := media.NewCreateMediaUseCase(&mediaRepo)
 	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
+	getMediasUseCase := media.NewGetMediasUseCase(&mediaRepo)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -77,6 +78,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		UserHandler: handler.NewUserHandler(),
 		MediaHandler: handler.NewMediaHandler(
 			generatePresignedUploadUrlUseCase,
+			getMediasUseCase,
 		),
 	}
 }
