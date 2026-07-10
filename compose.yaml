@@ -90,7 +90,7 @@ services:
       mc admin service restart myminio --json;
       sleep 5;
       mc event remove myminio/${STORAGE_BUCKET} --force || true;
-      for ext in jpg png mp4 mov; do
+      for ext in jpg jpeg png webp mp4 mov; do
         mc event add myminio/${STORAGE_BUCKET} arn:minio:sqs::analyze:webhook --event put --suffix .$$ext -p;
       done;
       "
