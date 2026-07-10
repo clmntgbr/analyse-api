@@ -112,18 +112,20 @@ func (h *MediaHandler) GetThumbnail(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	m, err := h.getMediaUseCase.Execute(c.Context(), user.ID, mediaID)
+	media, err := h.getMediaUseCase.Execute(c.Context(), user.ID, mediaID)
 	if err != nil {
 		log.Printf("MediaHandler: failed to get media: %v", err)
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	if m.Thumbnail == "" {
+	log.Printf("MediaHandler: media found: %+v", media)
+
+	if media.Thumbnail == "" {
 		log.Printf("MediaHandler: thumbnail not found for media ID: %v", mediaID)
 		return c.SendStatus(fiber.StatusNotFound)
 	}
 
-	reader, err := h.storage.GetThumbnail(c.Context(), mediadto.NewThumbnailObjectKey(user.ID, m.ID))
+	reader, err := h.storage.GetThumbnail(c.Context(), mediadto.NewThumbnailObjectKey(user.ID, media.ID))
 	if err != nil {
 		log.Printf("MediaHandler: failed to get thumbnail: %v", err)
 		return c.SendStatus(fiber.StatusNotFound)
