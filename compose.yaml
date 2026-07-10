@@ -48,11 +48,27 @@ services:
     networks:
       - api
     restart: unless-stopped
+  
+  minio:
+    container_name: s3
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: devuser
+      MINIO_ROOT_PASSWORD: devpassword
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - api
+    restart: unless-stopped
 
 volumes:
   go-modules:
   database_data:
-
+  minio_data:
 networks:
   api:
     name: go

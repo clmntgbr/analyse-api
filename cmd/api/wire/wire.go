@@ -5,6 +5,7 @@ import (
 	"go-api/handler/middleware"
 	infraClerk "go-api/infrastructure/clerk"
 	"go-api/infrastructure/config"
+	"go-api/infrastructure/storage"
 	repoGorm "go-api/repository/gorm"
 	"go-api/usecase/auth"
 	"go-api/usecase/clerk"
@@ -26,6 +27,13 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	if err != nil {
 		log.Fatalf("failed to create JWKS provider: %v", err)
 	}
+	log.Println("🚀 JWKS provider created")
+
+	_, err = storage.NewMinIOStorage(env)
+	if err != nil {
+		log.Fatalf("failed to create storage client: %v", err)
+	}
+	log.Println("🚀 Storage client created")
 
 	userRepo := repoGorm.NewUserRepository(db)
 

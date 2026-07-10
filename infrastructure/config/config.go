@@ -10,20 +10,28 @@ import (
 )
 
 type Config struct {
-	DatabaseURL                 string
-	ClerkWebhookSecret          string
-	Port                        string
-	Environment                 string
-	ClerkSecretKey              string
-	ClerkFrontendAPI            string
-	RabbitMQURL                 string
-	RabbitMQSecretKey           string
-	CORSAllowedOrigins          []string
-	CORSAllowCredentials        bool
-	CORSAllowMethods            []string
-	CORSAllowHeaders            []string
-	CORSMaxAge                  int
-	RateLimitMax                int
+	DatabaseURL          string
+	ClerkWebhookSecret   string
+	Port                 string
+	Environment          string
+	ClerkSecretKey       string
+	ClerkFrontendAPI     string
+	RabbitMQURL          string
+	RabbitMQSecretKey    string
+	CORSAllowedOrigins   []string
+	CORSAllowCredentials bool
+	CORSAllowMethods     []string
+	CORSAllowHeaders     []string
+	CORSMaxAge           int
+	RateLimitMax         int
+
+	StorageEndpoint     string
+	StorageRegion       string
+	StorageAccessKey    string
+	StorageSecretKey    string
+	StorageBucket       string
+	StorageUsePathStyle bool
+	MinIOWebhookSecret  string
 }
 
 func Load() *Config {
@@ -32,18 +40,26 @@ func Load() *Config {
 	}
 
 	return &Config{
-		DatabaseURL:                 getEnv("DATABASE_URL"),
-		ClerkWebhookSecret:          getEnv("CLERK_WEBHOOK_SECRET"),
-		Port:                        getEnv("PORT"),
-		Environment:                 getEnv("GO_ENV"),
-		ClerkSecretKey:              getEnv("CLERK_SECRET_KEY"),
-		ClerkFrontendAPI:            getEnv("CLERK_FRONTEND_API"),
-		CORSAllowedOrigins:          strings.Split(getEnv("CORS_ALLOWED_ORIGINS"), ","),
-		CORSAllowCredentials:        getEnvBool("CORS_ALLOW_CREDENTIALS"),
-		CORSAllowMethods:            strings.Split(getEnv("CORS_ALLOW_METHODS"), ","),
-		CORSAllowHeaders:            strings.Split(getEnv("CORS_ALLOW_HEADERS"), ","),
-		CORSMaxAge:                  getEnvInt("CORS_MAX_AGE"),
-		RateLimitMax:                getEnvInt("RATE_LIMIT_MAX"),
+		DatabaseURL:          getEnv("DATABASE_URL"),
+		ClerkWebhookSecret:   getEnv("CLERK_WEBHOOK_SECRET"),
+		Port:                 getEnv("PORT"),
+		Environment:          getEnv("GO_ENV"),
+		ClerkSecretKey:       getEnv("CLERK_SECRET_KEY"),
+		ClerkFrontendAPI:     getEnv("CLERK_FRONTEND_API"),
+		CORSAllowedOrigins:   strings.Split(getEnv("CORS_ALLOWED_ORIGINS"), ","),
+		CORSAllowCredentials: getEnvBool("CORS_ALLOW_CREDENTIALS"),
+		CORSAllowMethods:     strings.Split(getEnv("CORS_ALLOW_METHODS"), ","),
+		CORSAllowHeaders:     strings.Split(getEnv("CORS_ALLOW_HEADERS"), ","),
+		CORSMaxAge:           getEnvInt("CORS_MAX_AGE"),
+		RateLimitMax:         getEnvInt("RATE_LIMIT_MAX"),
+
+		StorageEndpoint:     getEnvOrDefault("STORAGE_ENDPOINT", ""),
+		StorageRegion:       getEnvOrDefault("STORAGE_REGION", "us-east-1"),
+		StorageAccessKey:    getEnv("STORAGE_ACCESS_KEY"),
+		StorageSecretKey:    getEnv("STORAGE_SECRET_KEY"),
+		StorageBucket:       getEnv("STORAGE_BUCKET"),
+		StorageUsePathStyle: getEnvBool("STORAGE_USE_PATH_STYLE"),
+		MinIOWebhookSecret:  getEnvOrDefault("MINIO_WEBHOOK_SECRET", ""),
 	}
 }
 
@@ -54,6 +70,13 @@ func getEnv(key string) string {
 
 	log.Panicf("required environment variable %s is not set", key)
 	return ""
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 func getEnvBool(key string) bool {
