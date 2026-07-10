@@ -8,7 +8,6 @@ import (
 	mediadto "go-api/infrastructure/media"
 	"go-api/infrastructure/storage"
 	"go-api/usecase/thumbnail"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -36,7 +35,8 @@ func (uc *GenerateThumbnailUseCase) Execute(ctx context.Context, userID uuid.UUI
 	defer original.Close()
 
 	var thumbBytes []byte
-	if strings.HasPrefix(media.ContentType, "image/") {
+	contentType := mediadto.ContentTypeFromKey(media.Key, media.ContentType)
+	if mediadto.IsImageContentType(contentType) {
 		thumbBytes, err = uc.generateThumbnailUseCase.Execute(ctx, original, 400)
 	} else {
 		return errors.New("unsupported content type")

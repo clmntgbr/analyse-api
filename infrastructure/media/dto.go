@@ -2,6 +2,7 @@ package media
 
 import (
 	"fmt"
+	"mime"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -65,6 +66,22 @@ func ValidatePresignUploadInput(input PresignUploadInput) error {
 	}
 
 	return nil
+}
+
+func ContentTypeFromKey(key string, fallback string) string {
+	if fallback != "" {
+		return fallback
+	}
+
+	if contentType := mime.TypeByExtension(filepath.Ext(key)); contentType != "" {
+		return contentType
+	}
+
+	return "application/octet-stream"
+}
+
+func IsImageContentType(contentType string) bool {
+	return strings.HasPrefix(contentType, "image/")
 }
 
 func NewFileKey(filename string) string {

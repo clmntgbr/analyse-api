@@ -54,8 +54,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
 	getMediasUseCase := media.NewGetMediasUseCase(&mediaRepo)
 	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
-	generateImageThumbnailUseCaseUseCase := thumbnail.NewGenerateImageThumbnailUseCase(storageClient)
-	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCaseUseCase)
+	generateImageThumbnailUseCase := thumbnail.NewGenerateImageThumbnailUseCase()
+	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)

@@ -4,18 +4,16 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"go-api/infrastructure/storage"
 	"io"
 
 	"github.com/disintegration/imaging"
+	_ "golang.org/x/image/webp"
 )
 
-type GenerateImageThumbnailUseCase struct {
-	storage *storage.MinIOStorage
-}
+type GenerateImageThumbnailUseCase struct{}
 
-func NewGenerateImageThumbnailUseCase(storage *storage.MinIOStorage) *GenerateImageThumbnailUseCase {
-	return &GenerateImageThumbnailUseCase{storage: storage}
+func NewGenerateImageThumbnailUseCase() *GenerateImageThumbnailUseCase {
+	return &GenerateImageThumbnailUseCase{}
 }
 
 func (uc *GenerateImageThumbnailUseCase) Execute(ctx context.Context, src io.Reader, maxWidth int) ([]byte, error) {
