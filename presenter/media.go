@@ -12,6 +12,7 @@ type GeneratePresignedUploadUrlDetailResponse struct {
 type MediaListResponse struct {
 	ID        string    `json:"id"`
 	Key       string    `json:"key"`
+	Thumbnail string    `json:"thumbnail"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -26,6 +27,7 @@ func NewMediaListResponse(media *entity.Media) *MediaListResponse {
 	return &MediaListResponse{
 		ID:        media.ID.String(),
 		Key:       media.Key,
+		Thumbnail: media.Thumbnail,
 		CreatedAt: media.CreatedAt,
 		UpdatedAt: media.UpdatedAt,
 	}
