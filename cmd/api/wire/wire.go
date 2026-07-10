@@ -19,7 +19,9 @@ import (
 type Container struct {
 	AuthenticateMiddleware *middleware.AuthenticateMiddleware
 	ClerkMiddleware        *middleware.ClerkMiddleware
+	MinIOMiddleware        *middleware.MinIOMiddleware
 	ClerkHandler           *handler.ClerkHandler
+	MinIOHandler           *handler.MinIOHandler
 	UserHandler            *handler.UserHandler
 	MediaHandler           *handler.MediaHandler
 }
@@ -49,6 +51,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	deleteUserByClerkIDUseCase := user.NewDeleteUserByClerkIDUseCase(&userRepo)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
+	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
 	authenticateMiddleware := middleware.NewAuthenticateMiddleware(
 		validateTokenUseCase,
 		fetchUserUseCase,
@@ -59,13 +62,15 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	return &Container{
 		AuthenticateMiddleware: authenticateMiddleware,
 		ClerkMiddleware:        clerkMiddleware,
+		MinIOMiddleware:        minIOMiddleware,
 		ClerkHandler: handler.NewClerkHandler(
 			getUserByClerkIDUseCase,
 			createUserUseCase,
 			updateUserUseCase,
 			deleteUserByClerkIDUseCase,
 		),
-		UserHandler: handler.NewUserHandler(),
+		MinIOHandler: handler.NewMinIOHandler(),
+		UserHandler:  handler.NewUserHandler(),
 		MediaHandler: handler.NewMediaHandler(
 			generatePresignedUploadUrlUseCase,
 		),

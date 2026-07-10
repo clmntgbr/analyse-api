@@ -17,6 +17,13 @@ func setupWebhooks(app *fiber.App, container *wire.Container) {
 	webhooks := app.Group("/webhook")
 
 	webhooks.Post("/clerk", container.ClerkMiddleware.Protected(), container.ClerkHandler.Execute)
+
+	minioWebhooks := app.Group("/webhooks/minio")
+	minioWebhooks.Post(
+		"/object-created",
+		container.MinIOMiddleware.Protected(),
+		container.MinIOHandler.ObjectCreated,
+	)
 }
 
 func setupHealthChecks(app *fiber.App) {
