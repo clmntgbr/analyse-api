@@ -33,6 +33,40 @@ type PresignUploadInput struct {
 	ContentType string
 }
 
+var allowedExtensions = map[string]struct{}{
+	"jpg":  {},
+	"jpeg": {},
+	"png":  {},
+	"webp": {},
+	"mp4":  {},
+	"mov":  {},
+	"avi":  {},
+	"mkv":  {},
+	"m4v":  {},
+	"mpeg": {},
+	"mpg":  {},
+	"wmv":  {},
+	"asf":  {},
+	"flv":  {},
+	"webm": {},
+	"ogg":  {},
+	"ogv":  {},
+	"mka":  {},
+}
+
+func ValidatePresignUploadInput(input PresignUploadInput) error {
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(input.Filename), "."))
+	if ext == "" {
+		return fmt.Errorf("filename must have a supported extension")
+	}
+
+	if _, ok := allowedExtensions[ext]; !ok {
+		return fmt.Errorf("unsupported file type: .%s", ext)
+	}
+
+	return nil
+}
+
 func NewFileKey(filename string) string {
 	ext := filepath.Ext(filename)
 	return uuid.NewString() + ext

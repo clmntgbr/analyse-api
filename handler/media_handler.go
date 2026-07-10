@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"go-api/handler/context"
 	mediadto "go-api/infrastructure/media"
 	"go-api/infrastructure/paginate"
@@ -43,6 +44,13 @@ func (h *MediaHandler) GeneratePresignedUploadUrl(c fiber.Ctx) error {
 
 	url, err := h.generatePresignedUploadUrlUseCase.Execute(c.Context(), user.ID, request)
 	if err != nil {
+		if errors.Is(err, media.ErrUnsupportedMediaType) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Unsupported media type",
+				"errors":  err.Error(),
+			})
+		}
+
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Internal server error",
 			"errors":  err.Error(),
