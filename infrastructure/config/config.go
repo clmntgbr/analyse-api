@@ -60,6 +60,8 @@ func Load() *Config {
 
 		ExchangeName:      getEnv("EXCHANGE_NAME"),
 		MetadataQueueName: getEnv("METADATA_QUEUE_NAME"),
+		RabbitMQURL:       getEnv("RABBITMQ_URL"),
+		RabbitMQSecretKey: getEnvOrDefault("RABBITMQ_SECRET_KEY", ""),
 
 		StorageEndpoint:         getEnvOrDefault("STORAGE_ENDPOINT", ""),
 		StorageInternalEndpoint: getEnvOrDefault("STORAGE_INTERNAL_ENDPOINT", ""),
