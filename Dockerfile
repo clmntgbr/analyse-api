@@ -48,6 +48,13 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o api \
     ./cmd/api
 
+# Build the metadata application
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -a -installsuffix cgo \
+    -ldflags="-w -s" \
+    -o metadata \
+    ./cmd/metadata
+
 # ============================================
 # Production stage - Minimal runtime
 # ============================================
@@ -64,6 +71,7 @@ WORKDIR /home/appuser
 
 # Copy binary from builder
 COPY --from=builder --chown=appuser:appuser /app/api .
+COPY --from=builder --chown=appuser:appuser /app/metadata .
 
 # Switch to non-root user
 USER appuser

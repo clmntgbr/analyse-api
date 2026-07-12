@@ -25,15 +25,18 @@ type Config struct {
 	CORSMaxAge           int
 	RateLimitMax         int
 
+	ExchangeName      string
+	MetadataQueueName string
+
 	StorageEndpoint         string
 	StorageInternalEndpoint string
 	StorageRegion           string
-	StorageAccessKey    string
-	StorageSecretKey    string
+	StorageAccessKey        string
+	StorageSecretKey        string
 	StorageBucket           string
 	StorageThumbnailBucket  string
 	StorageUsePathStyle     bool
-	MinIOWebhookSecret  string
+	MinIOWebhookSecret      string
 }
 
 func Load() *Config {
@@ -55,15 +58,18 @@ func Load() *Config {
 		CORSMaxAge:           getEnvInt("CORS_MAX_AGE"),
 		RateLimitMax:         getEnvInt("RATE_LIMIT_MAX"),
 
+		ExchangeName:      getEnv("EXCHANGE_NAME"),
+		MetadataQueueName: getEnv("METADATA_QUEUE_NAME"),
+
 		StorageEndpoint:         getEnvOrDefault("STORAGE_ENDPOINT", ""),
 		StorageInternalEndpoint: getEnvOrDefault("STORAGE_INTERNAL_ENDPOINT", ""),
 		StorageRegion:           getEnvOrDefault("STORAGE_REGION", "us-east-1"),
-		StorageAccessKey:    getEnv("STORAGE_ACCESS_KEY"),
-		StorageSecretKey:    getEnv("STORAGE_SECRET_KEY"),
-		StorageBucket:          getEnv("STORAGE_BUCKET"),
-		StorageThumbnailBucket: getEnvOrDefault("STORAGE_THUMBNAIL_BUCKET", "thumbnails"),
-		StorageUsePathStyle:    getEnvBool("STORAGE_USE_PATH_STYLE"),
-		MinIOWebhookSecret:  getEnvOrDefault("MINIO_WEBHOOK_SECRET", ""),
+		StorageAccessKey:        getEnv("STORAGE_ACCESS_KEY"),
+		StorageSecretKey:        getEnv("STORAGE_SECRET_KEY"),
+		StorageBucket:           getEnv("STORAGE_BUCKET"),
+		StorageThumbnailBucket:  getEnvOrDefault("STORAGE_THUMBNAIL_BUCKET", "thumbnails"),
+		StorageUsePathStyle:     getEnvBool("STORAGE_USE_PATH_STYLE"),
+		MinIOWebhookSecret:      getEnvOrDefault("MINIO_WEBHOOK_SECRET", ""),
 	}
 }
 
