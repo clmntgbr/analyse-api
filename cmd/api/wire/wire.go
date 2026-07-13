@@ -5,6 +5,7 @@ import (
 	"go-api/handler/middleware"
 	infraClerk "go-api/infrastructure/clerk"
 	"go-api/infrastructure/config"
+	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/storage"
 	repoGorm "go-api/repository/gorm"
 	"go-api/usecase/auth"
@@ -43,6 +44,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	userRepo := repoGorm.NewUserRepository(db)
 	mediaRepo := repoGorm.NewMediaRepository(db)
 
+	publisher := rabbitmq.NewLazyPublisherFromEnv(env)
+
 	validateTokenUseCase := auth.NewValidateTokenUseCase(jwksProvider, &userRepo)
 	fetchUserUseCase := clerk.NewFetchUserUseCase(env)
 	getUserByClerkIDUseCase := user.NewGetUserByClerkIDUseCase(&userRepo)
@@ -56,6 +59,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
 	generateImageThumbnailUseCase := thumbnail.NewGenerateImageThumbnailUseCase()
 	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
+	findMediaMetadataUseCase := media.NewFindMediaMetadataUseCase(&mediaRepo, publisher, env)
+	updateMediaStatusUseCase := media.NewUpdateMediaStatusUseCase(&mediaRepo)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -80,6 +85,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			env.StorageBucket,
 			createMediaUseCase,
 			generateThumbnailUseCase,
+			updateMediaStatusUseCase,
+			findMediaMetadataUseCase,
 		),
 		UserHandler: handler.NewUserHandler(),
 		MediaHandler: handler.NewMediaHandler(

@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"go-api/domain/enum"
 	mediadto "go-api/infrastructure/media"
 	miniodto "go-api/infrastructure/minio"
 	"go-api/usecase/media"
@@ -16,17 +17,23 @@ type MinIOHandler struct {
 	mediaBucket              string
 	createMediaUseCase       *media.CreateMediaUseCase
 	generateThumbnailUseCase *media.GenerateThumbnailUseCase
+	updateMediaStatusUseCase *media.UpdateMediaStatusUseCase
+	findMediaMetadataUseCase *media.FindMediaMetadataUseCase
 }
 
 func NewMinIOHandler(
 	mediaBucket string,
 	createMediaUseCase *media.CreateMediaUseCase,
 	generateThumbnailUseCase *media.GenerateThumbnailUseCase,
+	updateMediaStatusUseCase *media.UpdateMediaStatusUseCase,
+	findMediaMetadataUseCase *media.FindMediaMetadataUseCase,
 ) *MinIOHandler {
 	return &MinIOHandler{
 		mediaBucket:              mediaBucket,
 		createMediaUseCase:       createMediaUseCase,
 		generateThumbnailUseCase: generateThumbnailUseCase,
+		updateMediaStatusUseCase: updateMediaStatusUseCase,
+		findMediaMetadataUseCase: findMediaMetadataUseCase,
 	}
 }
 
@@ -77,6 +84,18 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 		err = h.generateThumbnailUseCase.Execute(c.Context(), userID, createdMedia.ID)
 		if err != nil {
 			log.Printf("MinIO webhook: failed to generate thumbnail for key %q: %v", fileKey, err)
+			continue
+		}
+
+		err = h.updateMediaStatusUseCase.Execute(c.Context(), createdMedia.ID, enum.MediaStatusUploaded)
+		if err != nil {
+			log.Printf("MinIO webhook: failed to update media status for key %q: %v", fileKey, err)
+			continue
+		}
+
+		err = h.findMediaMetadataUseCase.Execute(c.Context(), createdMedia.ID)
+		if err != nil {
+			log.Printf("MinIO webhook: failed to find media metadata for key %q: %v", fileKey, err)
 			continue
 		}
 	}

@@ -18,7 +18,7 @@ type Media struct {
 	ContentType string `gorm:"not null" json:"content_type"`
 	Size        int64  `gorm:"not null" json:"size"`
 
-	Status   enum.MediaStatus   `gorm:"type:varchar(20);not null;check:status IN ('pending','processing','completed','failed');index:idx_media_status" json:"status"`
+	Status   enum.MediaStatus   `gorm:"type:varchar(20);not null;check:status IN ('processing','uploaded');index:idx_media_status" json:"status"`
 	Statuses []enum.MediaStatus `gorm:"serializer:json;type:jsonb;default:'[]'" json:"statuses"`
 
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`

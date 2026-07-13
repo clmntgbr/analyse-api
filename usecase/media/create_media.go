@@ -25,6 +25,7 @@ func (u *CreateMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, key 
 		ContentType: contentType,
 		Size:        size,
 		Status:      enum.MediaStatusProcessing,
+		Statuses:    []enum.MediaStatus{enum.MediaStatusProcessing},
 	}
 
 	err := (*u.mediaRepo).Create(ctx, &media)
