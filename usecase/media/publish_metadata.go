@@ -35,7 +35,8 @@ func (u *PublishMetadataUseCase) Execute(ctx context.Context, mediaID uuid.UUID)
 	}
 
 	event := rabbitmq.MetadataEvent{
-		UserID:       media.UserID.String(),
+		UserID:       media.UserID,
+		MediaID:      mediaID,
 		MediaKey:     media.Key,
 		ThumbnailKey: media.Thumbnail,
 	}

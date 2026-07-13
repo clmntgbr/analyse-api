@@ -22,6 +22,7 @@ func NewMigrateCommand() *cobra.Command {
 				return tx.AutoMigrate(
 					&entity.User{},
 					&entity.Media{},
+					&entity.Signal{},
 				)
 			})
 
