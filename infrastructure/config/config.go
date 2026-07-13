@@ -25,8 +25,9 @@ type Config struct {
 	CORSMaxAge           int
 	RateLimitMax         int
 
-	ExchangeName      string
-	MetadataQueueName string
+	ExchangeName       string
+	MetadataQueueName  string
+	HeuristicQueueName string
 
 	StorageEndpoint         string
 	StorageInternalEndpoint string
@@ -58,8 +59,9 @@ func Load() *Config {
 		CORSMaxAge:           getEnvInt("CORS_MAX_AGE"),
 		RateLimitMax:         getEnvInt("RATE_LIMIT_MAX"),
 
-		ExchangeName:      getEnv("EXCHANGE_NAME"),
-		MetadataQueueName: getEnv("METADATA_QUEUE_NAME"),
+		ExchangeName:       getEnv("EXCHANGE_NAME"),
+		MetadataQueueName:  getEnv("METADATA_QUEUE_NAME"),
+		HeuristicQueueName: getEnv("HEURISTIC_QUEUE_NAME"),
 		RabbitMQURL:       getEnv("RABBITMQ_URL"),
 		RabbitMQSecretKey: getEnvOrDefault("RABBITMQ_SECRET_KEY", ""),
 

@@ -10,45 +10,48 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type MetadataMessageHandler interface {
+type MessageHandler interface {
 	HandleMessage(ctx context.Context, delivery *amqp.Delivery) error
 }
 
-type MetadataWorker struct {
-	env     *config.Config
-	handler MetadataMessageHandler
+type Worker struct {
+	env       *config.Config
+	queueName string
+	handler   MessageHandler
 
 	conn    *amqp.Connection
 	channel *amqp.Channel
 }
 
-func NewMetadataWorker(
+func NewWorker(
 	env *config.Config,
-	handler MetadataMessageHandler,
-) *MetadataWorker {
-	return &MetadataWorker{
-		env:     env,
-		handler: handler,
+	queueName string,
+	handler MessageHandler,
+) *Worker {
+	return &Worker{
+		env:       env,
+		queueName: queueName,
+		handler:   handler,
 	}
 }
 
-func (c *MetadataWorker) Start() error {
-	conn, err := dialWithRetry(c.env.RabbitMQURL)
+func (w *Worker) Start() error {
+	conn, err := dialWithRetry(w.env.RabbitMQURL)
 	if err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
 
-	c.conn = conn
+	w.conn = conn
 
 	channel, err := conn.Channel()
 	if err != nil {
 		return fmt.Errorf("failed to open RabbitMQ channel: %w", err)
 	}
 
-	c.channel = channel
+	w.channel = channel
 
-	if err := c.channel.ExchangeDeclare(
-		c.env.ExchangeName,
+	if err := w.channel.ExchangeDeclare(
+		w.env.ExchangeName,
 		"topic",
 		true,
 		false,
@@ -58,13 +61,13 @@ func (c *MetadataWorker) Start() error {
 	); err != nil {
 		return fmt.Errorf(
 			"failed to declare exchange %q: %w",
-			c.env.ExchangeName,
+			w.env.ExchangeName,
 			err,
 		)
 	}
 
-	queue, err := c.channel.QueueDeclare(
-		c.env.MetadataQueueName,
+	queue, err := w.channel.QueueDeclare(
+		w.queueName,
 		true,
 		false,
 		false,
@@ -74,12 +77,12 @@ func (c *MetadataWorker) Start() error {
 	if err != nil {
 		return fmt.Errorf(
 			"failed to declare queue %q: %w",
-			c.env.MetadataQueueName,
+			w.queueName,
 			err,
 		)
 	}
 
-	messages, err := c.channel.Consume(
+	messages, err := w.channel.Consume(
 		queue.Name,
 		"",
 		false,
@@ -98,12 +101,13 @@ func (c *MetadataWorker) Start() error {
 
 	log.Println("Successfully connected to RabbitMQ")
 	log.Printf(
-		"[*] Waiting for messages on exchange %q",
-		c.env.ExchangeName,
+		"[*] Waiting for messages on queue %q (exchange %q)",
+		w.queueName,
+		w.env.ExchangeName,
 	)
 
 	for message := range messages {
-		if err := c.handler.HandleMessage(context.Background(), &message); err != nil {
+		if err := w.handler.HandleMessage(context.Background(), &message); err != nil {
 			log.Printf(
 				"rejected message (routing key: %q): %v, body: %s",
 				message.RoutingKey,
@@ -126,15 +130,15 @@ func (c *MetadataWorker) Start() error {
 	return nil
 }
 
-func (c *MetadataWorker) Stop() error {
-	if c.channel != nil {
-		if err := c.channel.Close(); err != nil {
+func (w *Worker) Stop() error {
+	if w.channel != nil {
+		if err := w.channel.Close(); err != nil {
 			return err
 		}
 	}
 
-	if c.conn != nil {
-		if err := c.conn.Close(); err != nil {
+	if w.conn != nil {
+		if err := w.conn.Close(); err != nil {
 			return err
 		}
 	}

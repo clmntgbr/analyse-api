@@ -141,6 +141,28 @@ services:
       - api
     restart: unless-stopped
 
+  heuristic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: heuristic
+    command: go run ./cmd/heuristic
+    volumes:
+      - .:/app
+      - go-modules:/go/pkg/mod
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+      - HEURISTIC_QUEUE_NAME=${HEURISTIC_QUEUE_NAME:?HEURISTIC_QUEUE_NAME is required}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - api
+    restart: unless-stopped
+
 volumes:
   go-modules:
   database_data:
