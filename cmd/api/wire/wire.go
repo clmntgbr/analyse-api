@@ -59,7 +59,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
 	generateImageThumbnailUseCase := thumbnail.NewGenerateImageThumbnailUseCase()
 	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
-	findMediaMetadataUseCase := media.NewFindMediaMetadataUseCase(&mediaRepo, publisher, env)
+	publishMetadataUseCase := media.NewPublishMetadataUseCase(&mediaRepo, publisher, env)
 	updateMediaStatusUseCase := media.NewUpdateMediaStatusUseCase(&mediaRepo)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
@@ -86,7 +86,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			createMediaUseCase,
 			generateThumbnailUseCase,
 			updateMediaStatusUseCase,
-			findMediaMetadataUseCase,
+			publishMetadataUseCase,
 		),
 		UserHandler: handler.NewUserHandler(),
 		MediaHandler: handler.NewMediaHandler(

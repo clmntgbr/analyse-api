@@ -10,25 +10,25 @@ import (
 	"github.com/google/uuid"
 )
 
-type FindMediaMetadataUseCase struct {
+type PublishMetadataUseCase struct {
 	mediaRepo *repository.MediaRepository
 	publisher rabbitmq.Publisher
 	config    *config.Config
 }
 
-func NewFindMediaMetadataUseCase(
+func NewPublishMetadataUseCase(
 	mediaRepo *repository.MediaRepository,
 	publisher rabbitmq.Publisher,
 	config *config.Config,
-) *FindMediaMetadataUseCase {
-	return &FindMediaMetadataUseCase{
+) *PublishMetadataUseCase {
+	return &PublishMetadataUseCase{
 		mediaRepo: mediaRepo,
 		publisher: publisher,
 		config:    config,
 	}
 }
 
-func (u *FindMediaMetadataUseCase) Execute(ctx context.Context, mediaID uuid.UUID) error {
+func (u *PublishMetadataUseCase) Execute(ctx context.Context, mediaID uuid.UUID) error {
 	media, err := (*u.mediaRepo).GetByID(ctx, mediaID)
 	if err != nil {
 		return errors.New("failed to get media")

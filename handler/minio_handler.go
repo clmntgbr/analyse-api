@@ -18,7 +18,7 @@ type MinIOHandler struct {
 	createMediaUseCase       *media.CreateMediaUseCase
 	generateThumbnailUseCase *media.GenerateThumbnailUseCase
 	updateMediaStatusUseCase *media.UpdateMediaStatusUseCase
-	findMediaMetadataUseCase *media.FindMediaMetadataUseCase
+	publishMetadataUseCase   *media.PublishMetadataUseCase
 }
 
 func NewMinIOHandler(
@@ -26,14 +26,14 @@ func NewMinIOHandler(
 	createMediaUseCase *media.CreateMediaUseCase,
 	generateThumbnailUseCase *media.GenerateThumbnailUseCase,
 	updateMediaStatusUseCase *media.UpdateMediaStatusUseCase,
-	findMediaMetadataUseCase *media.FindMediaMetadataUseCase,
+	publishMetadataUseCase *media.PublishMetadataUseCase,
 ) *MinIOHandler {
 	return &MinIOHandler{
 		mediaBucket:              mediaBucket,
 		createMediaUseCase:       createMediaUseCase,
 		generateThumbnailUseCase: generateThumbnailUseCase,
 		updateMediaStatusUseCase: updateMediaStatusUseCase,
-		findMediaMetadataUseCase: findMediaMetadataUseCase,
+		publishMetadataUseCase:   publishMetadataUseCase,
 	}
 }
 
@@ -93,7 +93,7 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 			continue
 		}
 
-		err = h.findMediaMetadataUseCase.Execute(c.Context(), createdMedia.ID)
+		err = h.publishMetadataUseCase.Execute(c.Context(), createdMedia.ID)
 		if err != nil {
 			log.Printf("MinIO webhook: failed to find media metadata for key %q: %v", fileKey, err)
 			continue
