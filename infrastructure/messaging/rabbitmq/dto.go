@@ -1,15 +1,9 @@
 package rabbitmq
 
 type MessagePayload struct {
-	SecretKey string `json:"secret_key"`
-	Message   Event  `json:"message"`
+	SecretKey string        `json:"secret_key"`
+	Message   MetadataEvent `json:"message"`
 }
-
-type Event interface {
-	isMessage()
-}
-
-func (MetadataEvent) isMessage() {}
 
 type MetadataEvent struct {
 	UserID       string `json:"user_id"`
