@@ -10,7 +10,7 @@ import (
 type lazyPublisher struct {
 	env *config.Config
 
-	mu      sync.Mutex
+	mu        sync.Mutex
 	publisher Publisher
 }
 
@@ -18,13 +18,13 @@ func NewLazyPublisherFromEnv(env *config.Config) Publisher {
 	return &lazyPublisher{env: env}
 }
 
-func (p *lazyPublisher) PublishMetadataEvent(ctx context.Context, cfg *config.Config, event MetadataEvent) error {
+func (p *lazyPublisher) Publish(ctx context.Context, queueName string, message any) error {
 	publisher, err := p.getPublisher()
 	if err != nil {
 		return err
 	}
 
-	return publisher.PublishMetadataEvent(ctx, cfg, event)
+	return publisher.Publish(ctx, queueName, message)
 }
 
 func (p *lazyPublisher) getPublisher() (Publisher, error) {

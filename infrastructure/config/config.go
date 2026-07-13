@@ -25,9 +25,17 @@ type Config struct {
 	CORSMaxAge           int
 	RateLimitMax         int
 
-	ExchangeName       string
-	MetadataQueueName  string
-	HeuristicQueueName string
+	ExchangeName             string
+	AnalyzeRequestQueueName  string
+	MetadataAnalyzeQueueName string
+	MetadataDoneQueueName    string
+	MetadataFailedQueueName  string
+	HeuristicsAnalyzeQueueName string
+	HeuristicsDoneQueueName  string
+	HeuristicsFailedQueueName string
+	AiModelAnalyzeQueueName  string
+	AiModelDoneQueueName     string
+	AiModelFailedQueueName   string
 
 	StorageEndpoint         string
 	StorageInternalEndpoint string
@@ -59,9 +67,17 @@ func Load() *Config {
 		CORSMaxAge:           getEnvInt("CORS_MAX_AGE"),
 		RateLimitMax:         getEnvInt("RATE_LIMIT_MAX"),
 
-		ExchangeName:       getEnv("EXCHANGE_NAME"),
-		MetadataQueueName:  getEnv("METADATA_QUEUE_NAME"),
-		HeuristicQueueName: getEnv("HEURISTIC_QUEUE_NAME"),
+		ExchangeName:               getEnv("EXCHANGE_NAME"),
+		AnalyzeRequestQueueName:    getEnv("ANALYZE_REQUEST_QUEUE_NAME"),
+		MetadataAnalyzeQueueName:   getEnv("METADATA_ANALYZE_QUEUE_NAME"),
+		MetadataDoneQueueName:      getEnv("METADATA_DONE_QUEUE_NAME"),
+		MetadataFailedQueueName:    getEnv("METADATA_FAILED_QUEUE_NAME"),
+		HeuristicsAnalyzeQueueName: getEnv("HEURISTICS_ANALYZE_QUEUE_NAME"),
+		HeuristicsDoneQueueName:    getEnv("HEURISTICS_DONE_QUEUE_NAME"),
+		HeuristicsFailedQueueName:  getEnv("HEURISTICS_FAILED_QUEUE_NAME"),
+		AiModelAnalyzeQueueName:    getEnv("AI_MODEL_ANALYZE_QUEUE_NAME"),
+		AiModelDoneQueueName:       getEnv("AI_MODEL_DONE_QUEUE_NAME"),
+		AiModelFailedQueueName:     getEnv("AI_MODEL_FAILED_QUEUE_NAME"),
 		RabbitMQURL:       getEnv("RABBITMQ_URL"),
 		RabbitMQSecretKey: getEnvOrDefault("RABBITMQ_SECRET_KEY", ""),
 

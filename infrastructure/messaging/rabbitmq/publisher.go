@@ -4,21 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"go-api/infrastructure/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Publisher interface {
-	PublishMetadataEvent(ctx context.Context, config *config.Config, event MetadataEvent) error
+	Publish(ctx context.Context, queueName string, message any) error
 }
 
 type publisher struct {
+	env     *config.Config
 	channel *amqp.Channel
 }
 
-func NewPublisher(channel *amqp.Channel) Publisher {
+func NewPublisher(env *config.Config, channel *amqp.Channel) Publisher {
 	return &publisher{
+		env:     env,
 		channel: channel,
 	}
 }
@@ -28,21 +31,23 @@ func NewPublisherFromEnv(env *config.Config) (Publisher, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ at %s: %w", env.RabbitMQURL, err)
 	}
+
 	ch, err := conn.Channel()
 	if err != nil {
 		_ = conn.Close()
 		return nil, fmt.Errorf("failed to open RabbitMQ channel: %w", err)
 	}
-	return NewPublisher(ch), nil
+
+	return NewPublisher(env, ch), nil
 }
 
-func (p *publisher) PublishMetadataEvent(ctx context.Context, config *config.Config, event MetadataEvent) error {
-	message := MessagePayload{
-		SecretKey: config.RabbitMQSecretKey,
-		Message:   event,
+func (p *publisher) Publish(ctx context.Context, queueName string, message any) error {
+	payload := MessagePayload{
+		SecretKey: p.env.RabbitMQSecretKey,
+		Message:   message,
 	}
 
-	body, err := json.Marshal(message)
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
@@ -50,7 +55,7 @@ func (p *publisher) PublishMetadataEvent(ctx context.Context, config *config.Con
 	return p.channel.PublishWithContext(
 		ctx,
 		"",
-		config.MetadataQueueName,
+		queueName,
 		false,
 		false,
 		amqp.Publishing{

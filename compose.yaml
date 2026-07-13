@@ -118,6 +118,27 @@ services:
       - api
     restart: unless-stopped
 
+  dispatcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: dispatcher
+    command: go run ./cmd/dispatcher
+    volumes:
+      - .:/app
+      - go-modules:/go/pkg/mod
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - api
+    restart: unless-stopped
+
   metadata:
     build:
       context: .
@@ -132,7 +153,6 @@ services:
       - .env
     environment:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
-      - METADATA_QUEUE_NAME=${METADATA_QUEUE_NAME:?METADATA_QUEUE_NAME is required}
       - STORAGE_INTERNAL_ENDPOINT=http://minio:9000
     depends_on:
       rabbitmq:
@@ -155,7 +175,27 @@ services:
       - .env
     environment:
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
-      - HEURISTIC_QUEUE_NAME=${HEURISTIC_QUEUE_NAME:?HEURISTIC_QUEUE_NAME is required}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - api
+    restart: unless-stopped
+
+  aimodel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: aimodel
+    command: go run ./cmd/aimodel
+    volumes:
+      - .:/app
+      - go-modules:/go/pkg/mod
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672/
     depends_on:
       rabbitmq:
         condition: service_healthy

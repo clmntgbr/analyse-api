@@ -11,23 +11,23 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type HeuristicHandler struct {
+type AiModelHandler struct {
 	worker *StageWorkerHandler
 }
 
-func NewHeuristicHandler(
+func NewAiModelHandler(
 	parser *security.WorkerParser,
 	securityValidator *security.WorkerSecurityValidator,
 	dispatcher *pipelineuc.Dispatcher,
-) *HeuristicHandler {
+) *AiModelHandler {
 	process := func(_ context.Context, message rabbitmqDTO.AnalyzeMessage) error {
-		log.Printf("heuristics worker processing media %s", message.MediaID)
+		log.Printf("ai_model worker processing media %s", message.MediaID)
 		return nil
 	}
 
-	return &HeuristicHandler{
+	return &AiModelHandler{
 		worker: NewStageWorkerHandler(
-			"heuristics",
+			"ai_model",
 			parser,
 			securityValidator,
 			dispatcher,
@@ -36,7 +36,7 @@ func NewHeuristicHandler(
 	}
 }
 
-func (h *HeuristicHandler) HandleMessage(ctx context.Context, message *amqp.Delivery) error {
-	log.Printf("heuristics worker received: %s", message.Body)
+func (h *AiModelHandler) HandleMessage(ctx context.Context, message *amqp.Delivery) error {
+	log.Printf("ai_model worker received: %s", message.Body)
 	return h.worker.HandleMessage(ctx, message)
 }

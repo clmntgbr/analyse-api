@@ -1,7 +1,7 @@
 package main
 
 import (
-	"go-api/cmd/metadata/wire"
+	"go-api/cmd/aimodel/wire"
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"log"
@@ -16,19 +16,19 @@ func main() {
 
 	container := wire.NewContainer(db, env)
 
-	metadataWorker := rabbitmq.NewWorker(
+	aiModelWorker := rabbitmq.NewWorker(
 		env,
-		env.MetadataAnalyzeQueueName,
-		container.MetadataHandler,
+		env.AiModelAnalyzeQueueName,
+		container.AiModelHandler,
 	)
 
 	go func() {
-		if err := metadataWorker.Start(); err != nil {
-			log.Fatalf("failed to start metadata worker: %v", err)
+		if err := aiModelWorker.Start(); err != nil {
+			log.Fatalf("failed to start ai_model worker: %v", err)
 		}
 	}()
 
-	log.Println("metadata started")
+	log.Println("ai_model started")
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -37,7 +37,7 @@ func main() {
 
 	log.Printf("received signal %s, shutting down", sig)
 
-	if err := metadataWorker.Stop(); err != nil {
-		log.Printf("failed to stop metadata worker: %v", err)
+	if err := aiModelWorker.Stop(); err != nil {
+		log.Printf("failed to stop ai_model worker: %v", err)
 	}
 }

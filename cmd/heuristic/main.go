@@ -14,11 +14,11 @@ func main() {
 	env := config.Load()
 	db := config.ConnectDatabase(env)
 
-	container := wire.NewContainer(db)
+	container := wire.NewContainer(db, env)
 
 	heuristicWorker := rabbitmq.NewWorker(
 		env,
-		env.HeuristicQueueName,
+		env.HeuristicsAnalyzeQueueName,
 		container.HeuristicHandler,
 	)
 

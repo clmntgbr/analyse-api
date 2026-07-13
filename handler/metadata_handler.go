@@ -3,57 +3,64 @@ package handler
 import (
 	"context"
 
-	"go-api/infrastructure/config"
 	rabbitmqDTO "go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/messaging/security"
 	metadatauc "go-api/usecase/metadata"
+	pipelineuc "go-api/usecase/pipeline"
 	"go-api/usecase/signal"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type MetadataHandler struct {
-	env                         *config.Config
 	parser                      *security.WorkerParser
 	securityValidator           *security.WorkerSecurityValidator
+	dispatcher                  *pipelineuc.Dispatcher
 	analyzeMediaMetadataUseCase *metadatauc.AnalyzeMediaMetadataUseCase
 	createSignalUseCase         *signal.CreateSignalUseCase
 }
 
 func NewMetadataHandler(
-	env *config.Config,
 	parser *security.WorkerParser,
 	securityValidator *security.WorkerSecurityValidator,
+	dispatcher *pipelineuc.Dispatcher,
 	analyzeMediaMetadataUseCase *metadatauc.AnalyzeMediaMetadataUseCase,
 	createSignalUseCase *signal.CreateSignalUseCase,
 ) *MetadataHandler {
 	return &MetadataHandler{
-		env:                         env,
 		parser:                      parser,
 		securityValidator:           securityValidator,
+		dispatcher:                  dispatcher,
 		analyzeMediaMetadataUseCase: analyzeMediaMetadataUseCase,
 		createSignalUseCase:         createSignalUseCase,
 	}
 }
 
+func (h *MetadataHandler) process(ctx context.Context, message rabbitmqDTO.AnalyzeMessage) error {
+	result, err := h.analyzeMediaMetadataUseCase.Execute(ctx, message.UserID, message.MediaKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = h.createSignalUseCase.Execute(
+		ctx,
+		message.MediaID,
+		"metadata",
+		result.Signal.Score,
+		result.Signal.Confidence,
+		result.Signal.Details,
+	)
+	return err
+}
+
 func (h *MetadataHandler) HandleMessage(ctx context.Context, message *amqp.Delivery) error {
-	var payload rabbitmqDTO.MessagePayload
-	if err := h.parser.ParseAndValidate(message.Body, &payload); err != nil {
-		return err
-	}
+	worker := NewStageWorkerHandler(
+		"metadata",
+		h.parser,
+		h.securityValidator,
+		h.dispatcher,
+		h.process,
+	)
 
-	if err := h.securityValidator.Validate(payload.SecretKey); err != nil {
-		return err
-	}
-
-	result, err := h.analyzeMediaMetadataUseCase.Execute(ctx, payload.Message.UserID, payload.Message.MediaKey)
-	if err != nil {
-		return err
-	}
-	_, err = h.createSignalUseCase.Execute(ctx, payload.Message.MediaID, "metadata", result.Signal.Score, result.Signal.Confidence, result.Signal.Details)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return worker.HandleMessage(ctx, message)
 }

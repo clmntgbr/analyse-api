@@ -34,14 +34,14 @@ func (u *PublishMetadataUseCase) Execute(ctx context.Context, mediaID uuid.UUID)
 		return errors.New("failed to get media")
 	}
 
-	event := rabbitmq.MetadataEvent{
+	event := rabbitmq.AnalyzeMessage{
 		UserID:       media.UserID,
 		MediaID:      mediaID,
 		MediaKey:     media.Key,
 		ThumbnailKey: media.Thumbnail,
 	}
 
-	err = u.publisher.PublishMetadataEvent(ctx, u.config, event)
+	err = u.publisher.Publish(ctx, u.config.AnalyzeRequestQueueName, event)
 	if err != nil {
 		return errors.New("failed to publish metadata event")
 	}
