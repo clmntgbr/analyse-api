@@ -8,6 +8,7 @@ import (
 	"go-api/domain/entity"
 	"go-api/domain/enum"
 	"go-api/domain/repository"
+	"go-api/infrastructure/centrifugo"
 
 	"github.com/google/uuid"
 )
@@ -15,17 +16,20 @@ import (
 var requiredSignalNames = []string{"metadata", "heuristics", "ai_model"}
 
 type AggregateAnalysisUseCase struct {
-	mediaRepo  *repository.MediaRepository
-	signalRepo *repository.SignalRepository
+	mediaRepo           *repository.MediaRepository
+	signalRepo          *repository.SignalRepository
+	centrifugoPublisher *centrifugo.Publisher
 }
 
 func NewAggregateAnalysisUseCase(
 	mediaRepo *repository.MediaRepository,
 	signalRepo *repository.SignalRepository,
+	centrifugoPublisher *centrifugo.Publisher,
 ) *AggregateAnalysisUseCase {
 	return &AggregateAnalysisUseCase{
-		mediaRepo:  mediaRepo,
-		signalRepo: signalRepo,
+		mediaRepo:           mediaRepo,
+		signalRepo:          signalRepo,
+		centrifugoPublisher: centrifugoPublisher,
 	}
 }
 
@@ -52,7 +56,20 @@ func (u *AggregateAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUI
 	media.Statuses = append(media.Statuses, enum.MediaStatusAnalyzed)
 	media.Status = enum.MediaStatusAnalyzed
 
-	return (*u.mediaRepo).Update(ctx, media)
+	if err := (*u.mediaRepo).Update(ctx, media); err != nil {
+		return err
+	}
+
+	realtimeEvent, err := centrifugo.NewAnalysisCompletedEvent(media, signals)
+	if err != nil {
+		return errors.New("failed to build analysis completed event")
+	}
+
+	if err := u.centrifugoPublisher.PublishToUser(ctx, media.UserID, realtimeEvent); err != nil {
+		return errors.New("failed to publish analysis completed event")
+	}
+
+	return nil
 }
 
 func hasAllRequiredSignals(signals []*entity.Signal) bool {

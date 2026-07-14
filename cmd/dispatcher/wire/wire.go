@@ -2,6 +2,7 @@ package wire
 
 import (
 	"go-api/handler"
+	"go-api/infrastructure/centrifugo"
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/messaging/security"
@@ -24,10 +25,12 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		log.Fatalf("failed to create publisher: %v", err)
 	}
 
+	centrifugoPublisher := centrifugo.NewPublisher(env)
+
 	mediaRepo := repoGorm.NewMediaRepository(db)
 	signalRepo := repoGorm.NewSignalRepository(db)
 
-	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &signalRepo)
+	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &signalRepo, centrifugoPublisher)
 	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, aggregateAnalysisUseCase)
 
 	parser := security.NewWorkerParser(env)

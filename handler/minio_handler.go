@@ -95,7 +95,7 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 
 		err = h.publishMetadataUseCase.Execute(c.Context(), createdMedia.ID)
 		if err != nil {
-			log.Printf("MinIO webhook: failed to find media metadata for key %q: %v", fileKey, err)
+			log.Printf("MinIO webhook: failed to publish metadata for key %q: %v", fileKey, err)
 			continue
 		}
 	}

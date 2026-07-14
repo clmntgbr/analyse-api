@@ -50,6 +50,11 @@ type Config struct {
 	SightengineAPIURL    string
 	SightengineAPIUser   string
 	SightengineAPISecret string
+
+	CentrifugoURL         string
+	CentrifugoAPIKey      string
+	CentrifugoTokenSecret string
+	CentrifugoPublicWSURL string
 }
 
 func Load() *Config {
@@ -98,6 +103,11 @@ func Load() *Config {
 		SightengineAPIURL:    getEnvOrDefault("SIGHTENGINE_API_URL", "https://api.sightengine.com/1.0/check.json"),
 		SightengineAPIUser:   getEnvOrDefault("SIGHTENGINE_API_USER", ""),
 		SightengineAPISecret: getEnvOrDefault("SIGHTENGINE_API_SECRET", ""),
+
+		CentrifugoURL:         getEnvOrDefault("CENTRIFUGO_URL", "http://centrifugo:8000/api"),
+		CentrifugoAPIKey:      getEnvOrDefault("CENTRIFUGO_API_KEY", ""),
+		CentrifugoTokenSecret: getEnvOrDefault("CENTRIFUGO_TOKEN_SECRET", ""),
+		CentrifugoPublicWSURL: getEnvOrDefault("CENTRIFUGO_PUBLIC_WS_URL", "ws://localhost:8000/connection/websocket"),
 	}
 }
 

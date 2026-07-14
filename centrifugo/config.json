@@ -1,0 +1,13 @@
+{
+  "token_hmac_secret_key": "dev-centrifugo-token-secret",
+  "api_key": "dev-centrifugo-api-key",
+  "allowed_origins": ["http://localhost:3001"],
+  "namespaces": [
+    {
+      "name": "users",
+      "history_size": 32,
+      "history_ttl": 600,
+      "allow_subscribe_for_client": true
+    }
+  ]
+}

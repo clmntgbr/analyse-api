@@ -4,6 +4,7 @@ import (
 	"go-api/handler"
 	"go-api/handler/middleware"
 	infraClerk "go-api/infrastructure/clerk"
+	"go-api/infrastructure/centrifugo"
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/storage"
@@ -26,6 +27,7 @@ type Container struct {
 	MinIOHandler           *handler.MinIOHandler
 	UserHandler            *handler.UserHandler
 	MediaHandler           *handler.MediaHandler
+	RealtimeHandler        *handler.RealtimeHandler
 }
 
 func NewContainer(db *gorm.DB, env *config.Config) *Container {
@@ -45,6 +47,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	mediaRepo := repoGorm.NewMediaRepository(db)
 
 	publisher := rabbitmq.NewLazyPublisherFromEnv(env)
+	centrifugoPublisher := centrifugo.NewPublisher(env)
 
 	validateTokenUseCase := auth.NewValidateTokenUseCase(jwksProvider, &userRepo)
 	fetchUserUseCase := clerk.NewFetchUserUseCase(env)
@@ -59,7 +62,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
 	generateImageThumbnailUseCase := thumbnail.NewGenerateImageThumbnailUseCase()
 	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
-	publishMetadataUseCase := media.NewPublishMetadataUseCase(&mediaRepo, publisher, env)
+	publishMetadataUseCase := media.NewPublishMetadataUseCase(&mediaRepo, publisher, centrifugoPublisher, env)
 	updateMediaStatusUseCase := media.NewUpdateMediaStatusUseCase(&mediaRepo)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
@@ -95,5 +98,6 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			getMediaUseCase,
 			getMediasUseCase,
 		),
+		RealtimeHandler: handler.NewRealtimeHandler(env),
 	}
 }
