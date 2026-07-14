@@ -25,8 +25,10 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	}
 
 	mediaRepo := repoGorm.NewMediaRepository(db)
-	finalizeUseCase := pipelineuc.NewFinalizeAnalysisUseCase(&mediaRepo)
-	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, finalizeUseCase)
+	signalRepo := repoGorm.NewSignalRepository(db)
+
+	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &signalRepo)
+	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, aggregateAnalysisUseCase)
 
 	parser := security.NewWorkerParser(env)
 	securityValidator := security.NewWorkerSecurityValidator(env)

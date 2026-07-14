@@ -17,6 +17,7 @@ type signalRepository struct {
 func NewSignalRepository(db *gorm.DB) repository.SignalRepository {
 	return &signalRepository{db: db}
 }
+
 func (r *signalRepository) Create(ctx context.Context, signal *entity.Signal) error {
 	return dbWithContext(ctx, r.db).Create(signal).Error
 }
@@ -38,5 +39,19 @@ func (r *signalRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.S
 	if signal.ID == uuid.Nil {
 		return nil, errors.New("signal not found")
 	}
+
 	return &signal, nil
+}
+
+func (r *signalRepository) GetByMediaID(ctx context.Context, mediaID uuid.UUID) ([]*entity.Signal, error) {
+	var signals []*entity.Signal
+	err := dbWithContext(ctx, r.db).
+		Where("media_id = ?", mediaID).
+		Order("created_at ASC").
+		Find(&signals).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return signals, nil
 }

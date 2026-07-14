@@ -2,41 +2,65 @@ package handler
 
 import (
 	"context"
-	"log"
 
 	rabbitmqDTO "go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/messaging/security"
+	aimodeluc "go-api/usecase/aimodel"
 	pipelineuc "go-api/usecase/pipeline"
+	"go-api/usecase/signal"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type AiModelHandler struct {
-	worker *StageWorkerHandler
+	parser                     *security.WorkerParser
+	securityValidator          *security.WorkerSecurityValidator
+	dispatcher                 *pipelineuc.Dispatcher
+	analyzeMediaAiModelUseCase *aimodeluc.AnalyzeMediaAiModelUseCase
+	createSignalUseCase        *signal.CreateSignalUseCase
 }
 
 func NewAiModelHandler(
 	parser *security.WorkerParser,
 	securityValidator *security.WorkerSecurityValidator,
 	dispatcher *pipelineuc.Dispatcher,
+	analyzeMediaAiModelUseCase *aimodeluc.AnalyzeMediaAiModelUseCase,
+	createSignalUseCase *signal.CreateSignalUseCase,
 ) *AiModelHandler {
-	process := func(_ context.Context, message rabbitmqDTO.AnalyzeMessage) error {
-		log.Printf("ai_model worker processing media %s", message.MediaID)
-		return nil
-	}
-
 	return &AiModelHandler{
-		worker: NewStageWorkerHandler(
-			"ai_model",
-			parser,
-			securityValidator,
-			dispatcher,
-			process,
-		),
+		parser:                     parser,
+		securityValidator:          securityValidator,
+		dispatcher:                 dispatcher,
+		analyzeMediaAiModelUseCase: analyzeMediaAiModelUseCase,
+		createSignalUseCase:        createSignalUseCase,
 	}
 }
 
+func (h *AiModelHandler) process(ctx context.Context, message rabbitmqDTO.AnalyzeMessage) error {
+	result, err := h.analyzeMediaAiModelUseCase.Execute(ctx, message.UserID, message.MediaKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = h.createSignalUseCase.Execute(
+		ctx,
+		message.MediaID,
+		"ai_model",
+		result.Signal.Score,
+		result.Signal.Confidence,
+		result.Signal.Details,
+	)
+	return err
+}
+
 func (h *AiModelHandler) HandleMessage(ctx context.Context, message *amqp.Delivery) error {
-	log.Printf("ai_model worker received: %s", message.Body)
-	return h.worker.HandleMessage(ctx, message)
+	worker := NewStageWorkerHandler(
+		"ai_model",
+		h.parser,
+		h.securityValidator,
+		h.dispatcher,
+		h.process,
+	)
+
+	return worker.HandleMessage(ctx, message)
 }

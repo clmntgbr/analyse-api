@@ -34,8 +34,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	mediaRepo := repoGorm.NewMediaRepository(db)
 	signalRepo := repoGorm.NewSignalRepository(db)
 
-	finalizeUseCase := pipelineuc.NewFinalizeAnalysisUseCase(&mediaRepo)
-	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, finalizeUseCase)
+	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &signalRepo)
+	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, aggregateAnalysisUseCase)
 
 	analyzer := metadatainfra.NewAnalyzer()
 	analyzeMediaMetadataUseCase := metadatauc.NewAnalyzeMediaMetadataUseCase(storageClient, analyzer)

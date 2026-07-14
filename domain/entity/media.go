@@ -20,7 +20,11 @@ type Media struct {
 
 	Signals []Signal `gorm:"foreignKey:MediaID" json:"signals"`
 
-	Status   enum.MediaStatus   `gorm:"type:varchar(20);not null;check:status IN ('processing','uploaded');index:idx_media_status" json:"status"`
+	FinalScore           float64         `gorm:"default:-1" json:"final_score"`
+	AnalysisConfidence   ConfidenceLevel `gorm:"type:varchar(20);default:'unknown'" json:"confidence"`
+	Verdict              string          `gorm:"type:varchar(20);default:''" json:"verdict"`
+
+	Status   enum.MediaStatus   `gorm:"type:varchar(20);not null;check:status IN ('processing','uploaded','analyzed');index:idx_media_status" json:"status"`
 	Statuses []enum.MediaStatus `gorm:"serializer:json;type:jsonb;default:'[]'" json:"statuses"`
 
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`

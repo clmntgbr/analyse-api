@@ -12,4 +12,5 @@ type SignalRepository interface {
 	Update(ctx context.Context, signal *entity.Signal) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Signal, error)
+	GetByMediaID(ctx context.Context, mediaID uuid.UUID) ([]*entity.Signal, error)
 }

@@ -46,6 +46,10 @@ type Config struct {
 	StorageThumbnailBucket  string
 	StorageUsePathStyle     bool
 	MinIOWebhookSecret      string
+
+	SightengineAPIURL    string
+	SightengineAPIUser   string
+	SightengineAPISecret string
 }
 
 func Load() *Config {
@@ -90,6 +94,10 @@ func Load() *Config {
 		StorageThumbnailBucket:  getEnvOrDefault("STORAGE_THUMBNAIL_BUCKET", "thumbnails"),
 		StorageUsePathStyle:     getEnvBool("STORAGE_USE_PATH_STYLE"),
 		MinIOWebhookSecret:      getEnvOrDefault("MINIO_WEBHOOK_SECRET", ""),
+
+		SightengineAPIURL:    getEnvOrDefault("SIGHTENGINE_API_URL", "https://api.sightengine.com/1.0/check.json"),
+		SightengineAPIUser:   getEnvOrDefault("SIGHTENGINE_API_USER", ""),
+		SightengineAPISecret: getEnvOrDefault("SIGHTENGINE_API_SECRET", ""),
 	}
 }
 

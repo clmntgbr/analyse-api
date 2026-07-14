@@ -2,29 +2,26 @@ package pipeline
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 
 	"go-api/domain/repository"
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
-
-	"github.com/google/uuid"
 )
 
 type Dispatcher struct {
 	config          *config.Config
 	mediaRepo       *repository.MediaRepository
 	publisher       rabbitmq.Publisher
-	finalizeUseCase *FinalizeAnalysisUseCase
+	finalizeUseCase *AggregateAnalysisUseCase
 }
 
 func NewDispatcher(
 	config *config.Config,
 	mediaRepo *repository.MediaRepository,
 	publisher rabbitmq.Publisher,
-	finalizeUseCase *FinalizeAnalysisUseCase,
+	finalizeUseCase *AggregateAnalysisUseCase,
 ) *Dispatcher {
 	return &Dispatcher{
 		config:          config,
@@ -122,23 +119,4 @@ func (d *Dispatcher) PublishStageDone(ctx context.Context, queueName string, mes
 
 func (d *Dispatcher) PublishFailed(ctx context.Context, queueName string, message rabbitmq.FailedMessage) error {
 	return d.publisher.Publish(ctx, queueName, message)
-}
-
-type FinalizeAnalysisUseCase struct {
-	mediaRepo *repository.MediaRepository
-}
-
-func NewFinalizeAnalysisUseCase(mediaRepo *repository.MediaRepository) *FinalizeAnalysisUseCase {
-	return &FinalizeAnalysisUseCase{mediaRepo: mediaRepo}
-}
-
-func (u *FinalizeAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUID) error {
-	media, err := (*u.mediaRepo).GetByID(ctx, mediaID)
-	if err != nil {
-		return errors.New("failed to get media")
-	}
-
-	log.Printf("pipeline: analysis complete for media %s (key=%s)", media.ID, media.Key)
-
-	return nil
 }
