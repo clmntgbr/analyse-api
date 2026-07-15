@@ -99,6 +99,31 @@ func (h *MediaHandler) GetMedias(c fiber.Ctx) error {
 	return c.JSON(paginate.NewPaginateResponse(presenter.NewMediaListResponses(medias), int(total), query))
 }
 
+func (h *MediaHandler) GetMedia(c fiber.Ctx) error {
+	user, err := context.GetUser(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+			"errors":  err.Error(),
+		})
+	}
+
+	mediaID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.SendStatus(fiber.StatusNotFound)
+	}
+
+	media, err := h.getMediaUseCase.Execute(c.Context(), user.ID, mediaID)
+	if err != nil || media == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"errors":  err.Error(),
+		})
+	}
+
+	return c.JSON(presenter.NewMediaDetailResponse(media))
+}
+
 func (h *MediaHandler) GetThumbnail(c fiber.Ctx) error {
 	user, err := context.GetUser(c)
 	if err != nil {

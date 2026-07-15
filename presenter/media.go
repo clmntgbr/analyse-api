@@ -17,6 +17,18 @@ type SignalResponse struct {
 }
 
 type MediaListResponse struct {
+	ID         string    `json:"id"`
+	Key        string    `json:"key"`
+	Thumbnail  string    `json:"thumbnail"`
+	Status     string    `json:"status"`
+	FinalScore float64   `json:"finalScore,omitempty"`
+	Confidence string    `json:"confidence,omitempty"`
+	Verdict    string    `json:"verdict,omitempty"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+type MediaDetailResponse struct {
 	ID         string           `json:"id"`
 	Key        string           `json:"key"`
 	Thumbnail  string           `json:"thumbnail"`
@@ -51,10 +63,6 @@ func NewMediaListResponse(media *entity.Media) *MediaListResponse {
 		response.Verdict = media.Verdict
 	}
 
-	if len(media.Signals) > 0 {
-		response.Signals = NewSignalResponses(media.Signals)
-	}
-
 	return response
 }
 
@@ -70,6 +78,29 @@ func NewSignalResponses(signals []entity.Signal) []SignalResponse {
 	}
 
 	return responses
+}
+
+func NewMediaDetailResponse(media *entity.Media) *MediaDetailResponse {
+	return &MediaDetailResponse{
+		ID:         media.ID.String(),
+		Key:        media.Key,
+		Thumbnail:  thumbnailURL(media),
+		Status:     string(media.Status),
+		FinalScore: media.FinalScore,
+		Confidence: string(media.AnalysisConfidence),
+		Verdict:    media.Verdict,
+		Signals:    NewSignalResponses(media.Signals),
+		CreatedAt:  media.CreatedAt,
+		UpdatedAt:  media.UpdatedAt,
+	}
+}
+
+func NewMediaDetailResponses(medias []*entity.Media) []*MediaDetailResponse {
+	mediaDetailResponses := make([]*MediaDetailResponse, len(medias))
+	for i, media := range medias {
+		mediaDetailResponses[i] = NewMediaDetailResponse(media)
+	}
+	return mediaDetailResponses
 }
 
 func thumbnailURL(media *entity.Media) string {

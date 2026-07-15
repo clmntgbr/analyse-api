@@ -73,7 +73,7 @@ func ContentTypeFromKey(key string, fallback string) string {
 		return fallback
 	}
 
-	if contentType := mime.TypeByExtension(filepath.Ext(key)); contentType != "" {
+	if contentType := mime.TypeByExtension(strings.ToLower(filepath.Ext(key))); contentType != "" {
 		return contentType
 	}
 
@@ -85,7 +85,7 @@ func IsImageContentType(contentType string) bool {
 }
 
 func NewFileKey(filename string) string {
-	ext := filepath.Ext(filename)
+	ext := strings.ToLower(filepath.Ext(filename))
 	return uuid.NewString() + ext
 }
 
