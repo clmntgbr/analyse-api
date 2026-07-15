@@ -3,7 +3,9 @@ package gorm
 import (
 	"context"
 	"errors"
+	"go-api/domain/aggregate"
 	"go-api/domain/entity"
+	"go-api/domain/enum"
 	"go-api/domain/repository"
 	"go-api/infrastructure/paginate"
 
@@ -62,4 +64,29 @@ func (r *mediaRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Me
 		return nil, errors.New("media not found")
 	}
 	return &media, nil
+}
+
+func (r *mediaRepository) GetStatisticsByUserID(ctx context.Context, userID uuid.UUID) (*entity.MediaStatistics, error) {
+	var stats entity.MediaStatistics
+
+	err := dbWithContext(ctx, r.db).Raw(`
+		SELECT
+			COUNT(*) FILTER (WHERE status = ?) AS analyses_count,
+			COUNT(*) FILTER (WHERE verdict = ?) AS real_image_count,
+			COUNT(*) FILTER (WHERE verdict = ?) AS ai_image_count,
+			COALESCE(AVG(final_score) FILTER (WHERE status = ? AND final_score >= 0), 0) AS average_score
+		FROM medias
+		WHERE user_id = ?
+	`,
+		enum.MediaStatusAnalyzed,
+		aggregate.VerdictLikelyReal,
+		aggregate.VerdictLikelyAI,
+		enum.MediaStatusAnalyzed,
+		userID,
+	).Scan(&stats).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &stats, nil
 }

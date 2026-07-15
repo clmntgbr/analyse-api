@@ -20,6 +20,7 @@ type MediaHandler struct {
 	generatePresignedUploadUrlUseCase *media.GeneratePresignedUploadUrlUseCase
 	getMediaUseCase                   *media.GetMediaUseCase
 	getMediasUseCase                  *media.GetMediasUseCase
+	getMediaStatisticsUseCase         *media.GetMediaStatisticsUseCase
 }
 
 func NewMediaHandler(
@@ -27,12 +28,14 @@ func NewMediaHandler(
 	generatePresignedUploadUrlUseCase *media.GeneratePresignedUploadUrlUseCase,
 	getMediaUseCase *media.GetMediaUseCase,
 	getMediasUseCase *media.GetMediasUseCase,
+	getMediaStatisticsUseCase *media.GetMediaStatisticsUseCase,
 ) *MediaHandler {
 	return &MediaHandler{
 		storage:                           storage,
 		generatePresignedUploadUrlUseCase: generatePresignedUploadUrlUseCase,
 		getMediaUseCase:                   getMediaUseCase,
 		getMediasUseCase:                  getMediasUseCase,
+		getMediaStatisticsUseCase:         getMediaStatisticsUseCase,
 	}
 }
 
@@ -97,6 +100,25 @@ func (h *MediaHandler) GetMedias(c fiber.Ctx) error {
 	}
 
 	return c.JSON(paginate.NewPaginateResponse(presenter.NewMediaListResponses(medias), int(total), query))
+}
+
+func (h *MediaHandler) GetStatistics(c fiber.Ctx) error {
+	user, err := context.GetUser(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Unauthorized",
+		})
+	}
+
+	stats, err := h.getMediaStatisticsUseCase.Execute(c.Context(), user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"errors":  err.Error(),
+		})
+	}
+
+	return c.JSON(presenter.NewMediaStatisticsResponse(stats))
 }
 
 func (h *MediaHandler) GetMedia(c fiber.Ctx) error {

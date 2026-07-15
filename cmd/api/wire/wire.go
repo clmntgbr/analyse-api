@@ -60,6 +60,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
 	getMediasUseCase := media.NewGetMediasUseCase(&mediaRepo)
 	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
+	getMediaStatisticsUseCase := media.NewGetMediaStatisticsUseCase(&mediaRepo)
 	generateImageThumbnailUseCase := thumbnail.NewGenerateImageThumbnailUseCase()
 	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
 	publishMetadataUseCase := media.NewPublishMetadataUseCase(&mediaRepo, publisher, centrifugoPublisher, env)
@@ -97,6 +98,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			generatePresignedUploadUrlUseCase,
 			getMediaUseCase,
 			getMediasUseCase,
+			getMediaStatisticsUseCase,
 		),
 		RealtimeHandler: handler.NewRealtimeHandler(env),
 	}
