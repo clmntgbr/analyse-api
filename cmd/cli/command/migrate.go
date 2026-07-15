@@ -19,11 +19,17 @@ func NewMigrateCommand() *cobra.Command {
 			db := config.ConnectDatabase(env)
 
 			err := db.Transaction(func(tx *gorm.DB) error {
-				return tx.AutoMigrate(
+				if err := tx.AutoMigrate(
 					&entity.User{},
+					&entity.Insight{},
 					&entity.Media{},
 					&entity.Signal{},
-				)
+				); err != nil {
+					return err
+				}
+
+				// GORM AutoMigrate does not drop NOT NULL on existing columns.
+				return tx.Exec(`ALTER TABLE medias ALTER COLUMN insight_id DROP NOT NULL`).Error
 			})
 
 			if err != nil {

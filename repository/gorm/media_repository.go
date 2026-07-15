@@ -54,7 +54,7 @@ func (r *mediaRepository) GetByUserID(ctx context.Context, userID uuid.UUID, que
 
 func (r *mediaRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Media, error) {
 	var media entity.Media
-	err := dbWithContext(ctx, r.db).Where("id = ?", id).First(&media).Error
+	err := dbWithContext(ctx, r.db).Where("id = ?", id).Preload("Signals").Preload("Insight").First(&media).Error
 	if err != nil {
 		return nil, err
 	}

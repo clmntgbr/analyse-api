@@ -2,14 +2,15 @@ package wire
 
 import (
 	"go-api/handler"
+	"go-api/infrastructure/centrifugo"
 	"go-api/infrastructure/config"
 	heuristicsinfra "go-api/infrastructure/heuristics"
-	"go-api/infrastructure/centrifugo"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/messaging/security"
 	"go-api/infrastructure/storage"
 	repoGorm "go-api/repository/gorm"
 	heuristicuc "go-api/usecase/heuristic"
+	insightuc "go-api/usecase/insight"
 	pipelineuc "go-api/usecase/pipeline"
 	"go-api/usecase/signal"
 	"log"
@@ -36,6 +37,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 
 	mediaRepo := repoGorm.NewMediaRepository(db)
 	signalRepo := repoGorm.NewSignalRepository(db)
+	insightRepo := repoGorm.NewInsightRepository(db)
 
 	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &signalRepo, centrifugoPublisher)
 	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, aggregateAnalysisUseCase)
@@ -43,6 +45,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	analyzer := heuristicsinfra.NewAnalyzer()
 	analyzeMediaHeuristicsUseCase := heuristicuc.NewAnalyzeMediaHeuristicsUseCase(storageClient, analyzer)
 	createSignalUseCase := signal.NewCreateSignalUseCase(&signalRepo)
+	createInsightUseCase := insightuc.NewCreateInsightUseCase(&insightRepo, &mediaRepo)
 
 	parser := security.NewWorkerParser(env)
 	securityValidator := security.NewWorkerSecurityValidator(env)
@@ -53,6 +56,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		dispatcher,
 		analyzeMediaHeuristicsUseCase,
 		createSignalUseCase,
+		createInsightUseCase,
 	)
 
 	return &Container{

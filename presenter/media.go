@@ -16,6 +16,13 @@ type SignalResponse struct {
 	Details    []string `json:"details"`
 }
 
+type InsightResponse struct {
+	Noise       float64 `json:"noise"`
+	Compression float64 `json:"compression"`
+	Frequency   float64 `json:"frequency"`
+	Histogram   float64 `json:"histogram"`
+}
+
 type MediaListResponse struct {
 	ID         string    `json:"id"`
 	Key        string    `json:"key"`
@@ -24,6 +31,7 @@ type MediaListResponse struct {
 	FinalScore float64   `json:"finalScore,omitempty"`
 	Confidence string    `json:"confidence,omitempty"`
 	Verdict    string    `json:"verdict,omitempty"`
+	Size       int64     `json:"size,omitempty"`
 	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
@@ -37,6 +45,8 @@ type MediaDetailResponse struct {
 	Confidence string           `json:"confidence,omitempty"`
 	Verdict    string           `json:"verdict,omitempty"`
 	Signals    []SignalResponse `json:"signals,omitempty"`
+	Insight    InsightResponse  `json:"insight,omitempty"`
+	Size       int64            `json:"size,omitempty"`
 	CreatedAt  time.Time        `json:"createdAt"`
 	UpdatedAt  time.Time        `json:"updatedAt"`
 }
@@ -53,6 +63,7 @@ func NewMediaListResponse(media *entity.Media) *MediaListResponse {
 		Key:       media.Key,
 		Thumbnail: thumbnailURL(media),
 		Status:    string(media.Status),
+		Size:      media.Size,
 		CreatedAt: media.CreatedAt,
 		UpdatedAt: media.UpdatedAt,
 	}
@@ -80,6 +91,15 @@ func NewSignalResponses(signals []entity.Signal) []SignalResponse {
 	return responses
 }
 
+func NewInsightResponse(insight *entity.Insight) InsightResponse {
+	return InsightResponse{
+		Noise:       insight.Noise,
+		Compression: insight.Compression,
+		Frequency:   insight.Frequency,
+		Histogram:   insight.Histogram,
+	}
+}
+
 func NewMediaDetailResponse(media *entity.Media) *MediaDetailResponse {
 	return &MediaDetailResponse{
 		ID:         media.ID.String(),
@@ -90,6 +110,8 @@ func NewMediaDetailResponse(media *entity.Media) *MediaDetailResponse {
 		Confidence: string(media.AnalysisConfidence),
 		Verdict:    media.Verdict,
 		Signals:    NewSignalResponses(media.Signals),
+		Insight:    NewInsightResponse(media.Insight),
+		Size:       media.Size,
 		CreatedAt:  media.CreatedAt,
 		UpdatedAt:  media.UpdatedAt,
 	}

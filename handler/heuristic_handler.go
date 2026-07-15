@@ -6,6 +6,7 @@ import (
 	rabbitmqDTO "go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/messaging/security"
 	heuristicuc "go-api/usecase/heuristic"
+	insightuc "go-api/usecase/insight"
 	pipelineuc "go-api/usecase/pipeline"
 	"go-api/usecase/signal"
 
@@ -18,6 +19,7 @@ type HeuristicHandler struct {
 	dispatcher                    *pipelineuc.Dispatcher
 	analyzeMediaHeuristicsUseCase *heuristicuc.AnalyzeMediaHeuristicsUseCase
 	createSignalUseCase           *signal.CreateSignalUseCase
+	createInsightUseCase          *insightuc.CreateInsightUseCase
 }
 
 func NewHeuristicHandler(
@@ -26,6 +28,7 @@ func NewHeuristicHandler(
 	dispatcher *pipelineuc.Dispatcher,
 	analyzeMediaHeuristicsUseCase *heuristicuc.AnalyzeMediaHeuristicsUseCase,
 	createSignalUseCase *signal.CreateSignalUseCase,
+	createInsightUseCase *insightuc.CreateInsightUseCase,
 ) *HeuristicHandler {
 	return &HeuristicHandler{
 		parser:                        parser,
@@ -33,11 +36,24 @@ func NewHeuristicHandler(
 		dispatcher:                    dispatcher,
 		analyzeMediaHeuristicsUseCase: analyzeMediaHeuristicsUseCase,
 		createSignalUseCase:           createSignalUseCase,
+		createInsightUseCase:          createInsightUseCase,
 	}
 }
 
 func (h *HeuristicHandler) process(ctx context.Context, message rabbitmqDTO.AnalyzeMessage) error {
 	result, err := h.analyzeMediaHeuristicsUseCase.Execute(ctx, message.UserID, message.MediaKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = h.createInsightUseCase.Execute(
+		ctx,
+		message.MediaID,
+		result.Heuristics.NoiseScore,
+		result.Heuristics.CompressionScore,
+		result.Heuristics.FrequencyScore,
+		result.Heuristics.HistogramScore,
+	)
 	if err != nil {
 		return err
 	}
