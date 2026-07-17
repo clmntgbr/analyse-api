@@ -57,7 +57,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	deleteUserByClerkIDUseCase := user.NewDeleteUserByClerkIDUseCase(&userRepo)
 
 	createMediaUseCase := media.NewCreateMediaUseCase(&mediaRepo)
-	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient)
+	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient, &mediaRepo)
 	getMediasUseCase := media.NewGetMediasUseCase(&mediaRepo)
 	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
 	getMediaStatisticsUseCase := media.NewGetMediaStatisticsUseCase(&mediaRepo)

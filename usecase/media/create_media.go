@@ -19,6 +19,16 @@ func NewCreateMediaUseCase(mediaRepo *repository.MediaRepository) *CreateMediaUs
 }
 
 func (u *CreateMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, key string, contentType string, size int64) (*entity.Media, error) {
+	existing, err := (*u.mediaRepo).GetByKey(ctx, key)
+	if err == nil {
+		existing.ContentType = contentType
+		existing.Size = size
+		if err := (*u.mediaRepo).Update(ctx, existing); err != nil {
+			return nil, errors.New("failed to update media")
+		}
+		return existing, nil
+	}
+
 	media := entity.Media{
 		UserID:      userID,
 		Key:         key,
@@ -28,8 +38,7 @@ func (u *CreateMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, key 
 		Statuses:    []enum.MediaStatus{enum.MediaStatusProcessing},
 	}
 
-	err := (*u.mediaRepo).Create(ctx, &media)
-	if err != nil {
+	if err := (*u.mediaRepo).Create(ctx, &media); err != nil {
 		return nil, errors.New("failed to create media")
 	}
 

@@ -26,6 +26,7 @@ type InsightResponse struct {
 type MediaListResponse struct {
 	ID         string    `json:"id"`
 	Key        string    `json:"key"`
+	Filename   string    `json:"filename"`
 	Thumbnail  string    `json:"thumbnail"`
 	Status     string    `json:"status"`
 	FinalScore float64   `json:"finalScore,omitempty"`
@@ -39,6 +40,7 @@ type MediaListResponse struct {
 type MediaDetailResponse struct {
 	ID         string           `json:"id"`
 	Key        string           `json:"key"`
+	Filename   string           `json:"filename"`
 	Thumbnail  string           `json:"thumbnail"`
 	Status     string           `json:"status"`
 	FinalScore float64          `json:"finalScore,omitempty"`
@@ -61,6 +63,7 @@ func NewMediaListResponse(media *entity.Media) *MediaListResponse {
 	response := &MediaListResponse{
 		ID:        media.ID.String(),
 		Key:       media.Key,
+		Filename:  media.Filename,
 		Thumbnail: thumbnailURL(media),
 		Status:    string(media.Status),
 		Size:      media.Size,
@@ -101,20 +104,26 @@ func NewInsightResponse(insight *entity.Insight) InsightResponse {
 }
 
 func NewMediaDetailResponse(media *entity.Media) *MediaDetailResponse {
-	return &MediaDetailResponse{
+	response := &MediaDetailResponse{
 		ID:         media.ID.String(),
 		Key:        media.Key,
+		Filename:   media.Filename,
 		Thumbnail:  thumbnailURL(media),
 		Status:     string(media.Status),
 		FinalScore: media.FinalScore,
 		Confidence: string(media.AnalysisConfidence),
 		Verdict:    media.Verdict,
 		Signals:    NewSignalResponses(media.Signals),
-		Insight:    NewInsightResponse(media.Insight),
 		Size:       media.Size,
 		CreatedAt:  media.CreatedAt,
 		UpdatedAt:  media.UpdatedAt,
 	}
+
+	if media.Insight != nil {
+		response.Insight = NewInsightResponse(media.Insight)
+	}
+
+	return response
 }
 
 func NewMediaDetailResponses(medias []*entity.Media) []*MediaDetailResponse {

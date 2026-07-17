@@ -14,5 +14,6 @@ type MediaRepository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID, query paginate.PaginateQuery) ([]*entity.Media, int64, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Media, error)
+	GetByKey(ctx context.Context, key string) (*entity.Media, error)
 	GetStatisticsByUserID(ctx context.Context, userID uuid.UUID) (*entity.MediaStatistics, error)
 }

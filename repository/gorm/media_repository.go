@@ -38,7 +38,7 @@ func (r *mediaRepository) GetByUserID(ctx context.Context, userID uuid.UUID, que
 	db := dbWithContext(ctx, r.db).Model(&entity.Media{}).
 		Where("medias.user_id = ?", userID)
 	if query.Search != "" {
-		db = db.Where("medias.name ILIKE ? OR medias.key ILIKE ?", "%"+query.Search+"%", "%"+query.Search+"%")
+		db = db.Where("medias.filename ILIKE ? OR medias.key ILIKE ?", "%"+query.Search+"%", "%"+query.Search+"%")
 	}
 
 	db, total, err := Paginate(db, query)
@@ -57,6 +57,18 @@ func (r *mediaRepository) GetByUserID(ctx context.Context, userID uuid.UUID, que
 func (r *mediaRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Media, error) {
 	var media entity.Media
 	err := dbWithContext(ctx, r.db).Where("id = ?", id).Preload("Signals").Preload("Insight").First(&media).Error
+	if err != nil {
+		return nil, err
+	}
+	if media.ID == uuid.Nil {
+		return nil, errors.New("media not found")
+	}
+	return &media, nil
+}
+
+func (r *mediaRepository) GetByKey(ctx context.Context, key string) (*entity.Media, error) {
+	var media entity.Media
+	err := dbWithContext(ctx, r.db).Where("key = ?", key).First(&media).Error
 	if err != nil {
 		return nil, err
 	}

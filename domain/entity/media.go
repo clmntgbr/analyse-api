@@ -17,6 +17,7 @@ type Media struct {
 	Insight   *Insight   `gorm:"foreignKey:InsightID" json:"insight"`
 
 	Key         string `gorm:"uniqueIndex;not null" json:"key"`
+	Filename    string `gorm:"not null;default:''" json:"filename"`
 	Thumbnail   string `gorm:"not null" json:"thumbnail"`
 	ContentType string `gorm:"not null" json:"content_type"`
 	Size        int64  `gorm:"not null" json:"size"`
