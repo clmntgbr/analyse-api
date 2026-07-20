@@ -64,6 +64,109 @@ func Compute(signals []entity.Signal) AggregationResult {
 	}
 }
 
+// AggregateMediaResults merges per-media aggregation results into one Analysis result.
+// Works the same for 1 or N medias: average score, confidence capped by agreement and weakest media.
+func AggregateMediaResults(results []AggregationResult) AggregationResult {
+	if len(results) == 0 {
+		return AggregationResult{
+			FinalScore: -1,
+			Confidence: entity.ConfidenceUnknown,
+			Verdict:    VerdictUncertain,
+		}
+	}
+
+	scores := make([]float64, 0, len(results))
+	levels := make([]entity.ConfidenceLevel, 0, len(results)+1)
+	var sum float64
+	for _, result := range results {
+		scores = append(scores, result.FinalScore)
+		levels = append(levels, result.Confidence)
+		sum += result.FinalScore
+	}
+	levels = append(levels, agreementConfidence(scores))
+
+	finalScore := sum / float64(len(results))
+
+	return AggregationResult{
+		FinalScore: finalScore,
+		Confidence: minConfidenceLevels(levels...),
+		Verdict:    verdict(finalScore),
+	}
+}
+
+func agreementConfidence(scores []float64) entity.ConfidenceLevel {
+	if len(scores) == 0 {
+		return entity.ConfidenceUnknown
+	}
+	if len(scores) == 1 {
+		return entity.ConfidenceHigh
+	}
+
+	_, std := meanAndStd(scores)
+	switch {
+	case std <= 15:
+		return entity.ConfidenceHigh
+	case std <= 30:
+		return entity.ConfidenceMedium
+	default:
+		return entity.ConfidenceLow
+	}
+}
+
+type confidenceRank int
+
+const (
+	rankUnknown confidenceRank = iota
+	rankLow
+	rankMedium
+	rankHigh
+)
+
+func (r confidenceRank) min(other confidenceRank) confidenceRank {
+	if r < other {
+		return r
+	}
+	return other
+}
+
+func (r confidenceRank) toLevel() entity.ConfidenceLevel {
+	switch r {
+	case rankHigh:
+		return entity.ConfidenceHigh
+	case rankMedium:
+		return entity.ConfidenceMedium
+	case rankLow:
+		return entity.ConfidenceLow
+	default:
+		return entity.ConfidenceUnknown
+	}
+}
+
+func confidenceRankOf(level entity.ConfidenceLevel) confidenceRank {
+	switch level {
+	case entity.ConfidenceHigh:
+		return rankHigh
+	case entity.ConfidenceMedium:
+		return rankMedium
+	case entity.ConfidenceLow:
+		return rankLow
+	default:
+		return rankUnknown
+	}
+}
+
+func minConfidenceLevels(levels ...entity.ConfidenceLevel) entity.ConfidenceLevel {
+	if len(levels) == 0 {
+		return entity.ConfidenceUnknown
+	}
+
+	min := confidenceRankOf(levels[0])
+	for _, level := range levels[1:] {
+		min = min.min(confidenceRankOf(level))
+	}
+	return min.toLevel()
+}
+
 func effectiveWeight(signal entity.Signal) float64 {
 	base, ok := baseWeights[signal.Name]
 	if !ok {

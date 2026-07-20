@@ -28,6 +28,7 @@ type AnalysisDetailResponse struct {
 	FinalScore float64             `json:"finalScore,omitempty"`
 	Confidence string              `json:"confidence,omitempty"`
 	Verdict    string              `json:"verdict,omitempty"`
+	Insight    *InsightResponse    `json:"insight,omitempty"`
 	Medias     []MediaItemResponse `json:"medias"`
 	CreatedAt  time.Time           `json:"createdAt"`
 	UpdatedAt  time.Time           `json:"updatedAt"`
@@ -81,6 +82,7 @@ func NewAnalysisDetailResponse(analysis *entity.Analysis) *AnalysisDetailRespons
 	response := &AnalysisDetailResponse{
 		ID:        analysis.ID.String(),
 		Status:    analysisStatus(analysis),
+		Insight:   aggregatedInsight(analysis.Medias),
 		Medias:    NewMediaItemResponses(analysis.Medias),
 		CreatedAt: analysis.CreatedAt,
 		UpdatedAt: analysis.UpdatedAt,
@@ -93,6 +95,40 @@ func NewAnalysisDetailResponse(analysis *entity.Analysis) *AnalysisDetailRespons
 	}
 
 	return response
+}
+
+func aggregatedInsight(medias []entity.Media) *InsightResponse {
+	var (
+		count       int
+		noise       float64
+		compression float64
+		frequency   float64
+		histogram   float64
+	)
+
+	for _, media := range medias {
+		if media.Insight == nil {
+			continue
+		}
+
+		count++
+		noise += media.Insight.Noise
+		compression += media.Insight.Compression
+		frequency += media.Insight.Frequency
+		histogram += media.Insight.Histogram
+	}
+
+	if count == 0 {
+		return nil
+	}
+
+	n := float64(count)
+	return &InsightResponse{
+		Noise:       noise / n,
+		Compression: compression / n,
+		Frequency:   frequency / n,
+		Histogram:   histogram / n,
+	}
 }
 
 func NewAnalysisListResponses(analyses []*entity.Analysis) []*AnalysisListResponse {

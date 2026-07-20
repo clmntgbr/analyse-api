@@ -51,8 +51,6 @@ func (u *AggregateAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUI
 		return errors.New("not all signals are ready")
 	}
 
-	result := aggregate.Compute(toEntitySignals(signals))
-
 	media.Statuses = append(media.Statuses, enum.MediaStatusAnalyzed)
 	media.Status = enum.MediaStatusAnalyzed
 	if err := (*u.mediaRepo).Update(ctx, media); err != nil {
@@ -64,6 +62,28 @@ func (u *AggregateAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUI
 		return errors.New("analysis not found")
 	}
 
+	if !allMediasAnalyzed(analysis.Medias) {
+		return nil
+	}
+
+	mediaResults := make([]aggregate.AggregationResult, 0, len(analysis.Medias))
+	var allSignals []*entity.Signal
+
+	for _, analysisMedia := range analysis.Medias {
+		mediaSignals, err := (*u.signalRepo).GetByMediaID(ctx, analysisMedia.ID)
+		if err != nil {
+			return errors.New("failed to load signals")
+		}
+		if !hasAllRequiredSignals(mediaSignals) {
+			return errors.New("not all signals are ready")
+		}
+
+		mediaResults = append(mediaResults, aggregate.Compute(toEntitySignals(mediaSignals)))
+		allSignals = append(allSignals, mediaSignals...)
+	}
+
+	result := aggregate.AggregateMediaResults(mediaResults)
+
 	analysis.FinalScore = result.FinalScore
 	analysis.AnalysisConfidence = result.Confidence
 	analysis.Verdict = result.Verdict
@@ -71,7 +91,7 @@ func (u *AggregateAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUI
 		return err
 	}
 
-	realtimeEvent, err := centrifugo.NewAnalysisCompletedEvent(analysis, media, signals)
+	realtimeEvent, err := centrifugo.NewAnalysisCompletedEvent(analysis, media, allSignals)
 	if err != nil {
 		return errors.New("failed to build analysis completed event")
 	}
@@ -81,6 +101,20 @@ func (u *AggregateAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUI
 	}
 
 	return nil
+}
+
+func allMediasAnalyzed(medias []entity.Media) bool {
+	if len(medias) == 0 {
+		return false
+	}
+
+	for _, media := range medias {
+		if media.Status != enum.MediaStatusAnalyzed {
+			return false
+		}
+	}
+
+	return true
 }
 
 func hasAllRequiredSignals(signals []*entity.Signal) bool {
