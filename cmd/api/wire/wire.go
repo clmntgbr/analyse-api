@@ -8,6 +8,7 @@ import (
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/storage"
+	"go-api/infrastructure/video"
 	repoGorm "go-api/repository/gorm"
 	"go-api/usecase/analysis"
 	"go-api/usecase/auth"
@@ -69,6 +70,17 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
 	publishMetadataUseCase := media.NewPublishMetadataUseCase(&mediaRepo, publisher, centrifugoPublisher, env)
 	updateMediaStatusUseCase := media.NewUpdateMediaStatusUseCase(&mediaRepo)
+	frameExtractor := video.NewFrameExtractor()
+	processUploadedMediaUseCase := media.NewProcessUploadedMediaUseCase(
+		storageClient,
+		&mediaRepo,
+		createMediaUseCase,
+		generateThumbnailUseCase,
+		updateMediaStatusUseCase,
+		publishMetadataUseCase,
+		frameExtractor,
+		generateImageThumbnailUseCase,
+	)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -91,10 +103,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		),
 		MinIOHandler: handler.NewMinIOHandler(
 			env.StorageBucket,
-			createMediaUseCase,
-			generateThumbnailUseCase,
-			updateMediaStatusUseCase,
-			publishMetadataUseCase,
+			processUploadedMediaUseCase,
 		),
 		UserHandler: handler.NewUserHandler(),
 		AnalysisHandler: handler.NewAnalysisHandler(

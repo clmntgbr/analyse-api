@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"go-api/domain/enum"
 	mediadto "go-api/infrastructure/media"
 	miniodto "go-api/infrastructure/minio"
 	"go-api/usecase/media"
@@ -14,26 +13,17 @@ import (
 )
 
 type MinIOHandler struct {
-	mediaBucket              string
-	createMediaUseCase       *media.CreateMediaUseCase
-	generateThumbnailUseCase *media.GenerateThumbnailUseCase
-	updateMediaStatusUseCase *media.UpdateMediaStatusUseCase
-	publishMetadataUseCase   *media.PublishMetadataUseCase
+	mediaBucket                string
+	processUploadedMediaUseCase *media.ProcessUploadedMediaUseCase
 }
 
 func NewMinIOHandler(
 	mediaBucket string,
-	createMediaUseCase *media.CreateMediaUseCase,
-	generateThumbnailUseCase *media.GenerateThumbnailUseCase,
-	updateMediaStatusUseCase *media.UpdateMediaStatusUseCase,
-	publishMetadataUseCase *media.PublishMetadataUseCase,
+	processUploadedMediaUseCase *media.ProcessUploadedMediaUseCase,
 ) *MinIOHandler {
 	return &MinIOHandler{
-		mediaBucket:              mediaBucket,
-		createMediaUseCase:       createMediaUseCase,
-		generateThumbnailUseCase: generateThumbnailUseCase,
-		updateMediaStatusUseCase: updateMediaStatusUseCase,
-		publishMetadataUseCase:   publishMetadataUseCase,
+		mediaBucket:                 mediaBucket,
+		processUploadedMediaUseCase: processUploadedMediaUseCase,
 	}
 }
 
@@ -63,6 +53,10 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 			continue
 		}
 
+		if mediadto.IsFrameObjectKey(decodedKey) {
+			continue
+		}
+
 		userID, err := mediadto.UserIDFromKey(record.S3.Object.Key)
 		if err != nil {
 			log.Printf("MinIO webhook: invalid object key %q: %v", record.S3.Object.Key, err)
@@ -75,27 +69,15 @@ func (h *MinIOHandler) ObjectCreated(c fiber.Ctx) error {
 			continue
 		}
 
-		createdMedia, err := h.createMediaUseCase.Execute(c.Context(), userID, fileKey, record.S3.Object.ContentType, record.S3.Object.Size)
+		err = h.processUploadedMediaUseCase.Execute(
+			c.Context(),
+			userID,
+			fileKey,
+			record.S3.Object.ContentType,
+			record.S3.Object.Size,
+		)
 		if err != nil {
-			log.Printf("MinIO webhook: failed to create media for key %q: %v", fileKey, err)
-			continue
-		}
-
-		err = h.generateThumbnailUseCase.Execute(c.Context(), userID, createdMedia.ID)
-		if err != nil {
-			log.Printf("MinIO webhook: failed to generate thumbnail for key %q: %v", fileKey, err)
-			continue
-		}
-
-		err = h.updateMediaStatusUseCase.Execute(c.Context(), createdMedia.ID, enum.MediaStatusUploaded)
-		if err != nil {
-			log.Printf("MinIO webhook: failed to update media status for key %q: %v", fileKey, err)
-			continue
-		}
-
-		err = h.publishMetadataUseCase.Execute(c.Context(), createdMedia.ID)
-		if err != nil {
-			log.Printf("MinIO webhook: failed to publish metadata for key %q: %v", fileKey, err)
+			log.Printf("MinIO webhook: failed to process upload for key %q: %v", fileKey, err)
 			continue
 		}
 	}

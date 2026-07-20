@@ -5,8 +5,8 @@ FROM golang:1.25-alpine AS base
 
 WORKDIR /app
 
-# Install git for Go modules
-RUN apk add --no-cache git
+# Install git and ffmpeg for Go modules / video frame extraction
+RUN apk add --no-cache git ffmpeg
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -60,8 +60,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # ============================================
 FROM alpine:latest AS production
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates tzdata
+# Install ca-certificates, ffmpeg for HTTPS and video frame extraction
+RUN apk --no-cache add ca-certificates tzdata ffmpeg
 
 # Create non-root user
 RUN addgroup -g 1000 appuser && \

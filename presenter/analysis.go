@@ -2,6 +2,7 @@ package presenter
 
 import (
 	"go-api/domain/entity"
+	"go-api/domain/enum"
 	"time"
 )
 
@@ -28,6 +29,8 @@ type AnalysisDetailResponse struct {
 	FinalScore float64             `json:"finalScore,omitempty"`
 	Confidence string              `json:"confidence,omitempty"`
 	Verdict    string              `json:"verdict,omitempty"`
+	Filename   string              `json:"filename,omitempty"`
+	Thumbnail  string              `json:"thumbnail,omitempty"`
 	Insight    *InsightResponse    `json:"insight,omitempty"`
 	Medias     []MediaItemResponse `json:"medias"`
 	CreatedAt  time.Time           `json:"createdAt"`
@@ -48,11 +51,29 @@ func primaryMedia(analysis *entity.Analysis) *entity.Media {
 }
 
 func analysisStatus(analysis *entity.Analysis) string {
-	media := primaryMedia(analysis)
-	if media == nil {
+	if analysis == nil || len(analysis.Medias) == 0 {
 		return ""
 	}
-	return string(media.Status)
+
+	allAnalyzed := true
+	hasUploaded := false
+	for _, media := range analysis.Medias {
+		if media.Status != enum.MediaStatusAnalyzed {
+			allAnalyzed = false
+		}
+		if media.Status == enum.MediaStatusUploaded || media.Status == enum.MediaStatusAnalyzed {
+			hasUploaded = true
+		}
+	}
+
+	if allAnalyzed {
+		return string(enum.MediaStatusAnalyzed)
+	}
+	if hasUploaded {
+		return string(enum.MediaStatusUploaded)
+	}
+
+	return string(enum.MediaStatusProcessing)
 }
 
 func NewAnalysisListResponse(analysis *entity.Analysis) *AnalysisListResponse {
@@ -86,6 +107,11 @@ func NewAnalysisDetailResponse(analysis *entity.Analysis) *AnalysisDetailRespons
 		Medias:    NewMediaItemResponses(analysis.Medias),
 		CreatedAt: analysis.CreatedAt,
 		UpdatedAt: analysis.UpdatedAt,
+	}
+
+	if media := primaryMedia(analysis); media != nil {
+		response.Filename = media.Filename
+		response.Thumbnail = thumbnailURL(*media)
 	}
 
 	if analysis.Verdict != "" {

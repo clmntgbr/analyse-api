@@ -1,0 +1,185 @@
+package media
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+
+	"go-api/domain/entity"
+	"go-api/domain/enum"
+	"go-api/domain/repository"
+	mediadto "go-api/infrastructure/media"
+	"go-api/infrastructure/storage"
+	"go-api/infrastructure/video"
+	"go-api/usecase/thumbnail"
+
+	"github.com/google/uuid"
+)
+
+type ProcessUploadedMediaUseCase struct {
+	storage                  *storage.MinIOStorage
+	mediaRepo                *repository.MediaRepository
+	createMediaUseCase       *CreateMediaUseCase
+	generateThumbnailUseCase *GenerateThumbnailUseCase
+	updateMediaStatusUseCase *UpdateMediaStatusUseCase
+	publishMetadataUseCase   *PublishMetadataUseCase
+	frameExtractor           *video.FrameExtractor
+	imageThumbnailUseCase    *thumbnail.GenerateImageThumbnailUseCase
+}
+
+func NewProcessUploadedMediaUseCase(
+	storage *storage.MinIOStorage,
+	mediaRepo *repository.MediaRepository,
+	createMediaUseCase *CreateMediaUseCase,
+	generateThumbnailUseCase *GenerateThumbnailUseCase,
+	updateMediaStatusUseCase *UpdateMediaStatusUseCase,
+	publishMetadataUseCase *PublishMetadataUseCase,
+	frameExtractor *video.FrameExtractor,
+	imageThumbnailUseCase *thumbnail.GenerateImageThumbnailUseCase,
+) *ProcessUploadedMediaUseCase {
+	return &ProcessUploadedMediaUseCase{
+		storage:                  storage,
+		mediaRepo:                mediaRepo,
+		createMediaUseCase:       createMediaUseCase,
+		generateThumbnailUseCase: generateThumbnailUseCase,
+		updateMediaStatusUseCase: updateMediaStatusUseCase,
+		publishMetadataUseCase:   publishMetadataUseCase,
+		frameExtractor:           frameExtractor,
+		imageThumbnailUseCase:    imageThumbnailUseCase,
+	}
+}
+
+func (u *ProcessUploadedMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, fileKey string, contentType string, size int64) error {
+	contentType = mediadto.ContentTypeFromKey(fileKey, contentType)
+
+	sourceMedia, err := u.createMediaUseCase.Execute(ctx, userID, fileKey, contentType, size)
+	if err != nil {
+		return err
+	}
+
+	if mediadto.IsVideoContentType(contentType) {
+		return u.processVideo(ctx, userID, sourceMedia)
+	}
+
+	return u.processImage(ctx, userID, sourceMedia)
+}
+
+func (u *ProcessUploadedMediaUseCase) processImage(ctx context.Context, userID uuid.UUID, media *entity.Media) error {
+	if err := u.generateThumbnailUseCase.Execute(ctx, userID, media.ID); err != nil {
+		return fmt.Errorf("failed to generate thumbnail: %w", err)
+	}
+
+	if err := u.updateMediaStatusUseCase.Execute(ctx, media.ID, enum.MediaStatusUploaded); err != nil {
+		return fmt.Errorf("failed to update media status: %w", err)
+	}
+
+	if err := u.publishMetadataUseCase.Execute(ctx, media.ID); err != nil {
+		return fmt.Errorf("failed to publish metadata: %w", err)
+	}
+
+	return nil
+}
+
+func (u *ProcessUploadedMediaUseCase) processVideo(ctx context.Context, userID uuid.UUID, sourceMedia *entity.Media) error {
+	objectKey := mediadto.NewObjectKey(userID, sourceMedia.Key)
+	reader, err := u.storage.Get(ctx, objectKey)
+	if err != nil {
+		return fmt.Errorf("failed to download video: %w", err)
+	}
+	defer reader.Close()
+
+	videoData, err := io.ReadAll(reader)
+	if err != nil {
+		return fmt.Errorf("failed to read video: %w", err)
+	}
+
+	frames, err := u.frameExtractor.ExtractFrames(videoData, mediadto.MaxVideoFrames())
+	if err != nil {
+		return fmt.Errorf("failed to extract frames: %w", err)
+	}
+	if len(frames) == 0 {
+		return errors.New("no frames extracted from video")
+	}
+
+	baseFilename := sourceMedia.Filename
+	analysisID := sourceMedia.AnalysisID
+
+	for i, frame := range frames {
+		frameKey := mediadto.NewFrameFileKey()
+		frameObjectKey := mediadto.NewObjectKey(userID, frameKey)
+		filename := baseFilename
+		if i > 0 {
+			filename = fmt.Sprintf("%s#frame-%02d", baseFilename, i+1)
+		}
+
+		if err := u.storage.Put(ctx, frameObjectKey, bytes.NewReader(frame), int64(len(frame)), "image/jpeg"); err != nil {
+			return fmt.Errorf("failed to store frame %d: %w", i, err)
+		}
+
+		var frameMedia *entity.Media
+		if i == 0 {
+			sourceMedia.Key = frameKey
+			sourceMedia.Filename = filename
+			sourceMedia.ContentType = "image/jpeg"
+			sourceMedia.Size = int64(len(frame))
+			if err := (*u.mediaRepo).Update(ctx, sourceMedia); err != nil {
+				return fmt.Errorf("failed to update source media as first frame: %w", err)
+			}
+			frameMedia = sourceMedia
+		} else {
+			created := entity.Media{
+				AnalysisID:  analysisID,
+				UserID:      userID,
+				Key:         frameKey,
+				Filename:    filename,
+				ContentType: "image/jpeg",
+				Size:        int64(len(frame)),
+				Status:      enum.MediaStatusProcessing,
+				Statuses:    []enum.MediaStatus{enum.MediaStatusProcessing},
+			}
+			if err := (*u.mediaRepo).Create(ctx, &created); err != nil {
+				return fmt.Errorf("failed to create frame media %d: %w", i, err)
+			}
+			frameMedia = &created
+		}
+
+		if err := u.storeFrameThumbnail(ctx, userID, frameMedia, frame); err != nil {
+			return fmt.Errorf("failed to store thumbnail for frame %d: %w", i, err)
+		}
+
+		if err := u.updateMediaStatusUseCase.Execute(ctx, frameMedia.ID, enum.MediaStatusUploaded); err != nil {
+			return fmt.Errorf("failed to update frame %d status: %w", i, err)
+		}
+
+		if err := u.publishMetadataUseCase.Execute(ctx, frameMedia.ID); err != nil {
+			return fmt.Errorf("failed to publish frame %d analysis: %w", i, err)
+		}
+	}
+
+	log.Printf("video processed: analysis=%s frames=%d", analysisID, len(frames))
+	return nil
+}
+
+func (u *ProcessUploadedMediaUseCase) storeFrameThumbnail(ctx context.Context, userID uuid.UUID, media *entity.Media, frame []byte) error {
+	thumbBytes, err := u.imageThumbnailUseCase.Execute(ctx, bytes.NewReader(frame), 400)
+	if err != nil {
+		return err
+	}
+
+	thumbKey := mediadto.NewThumbnailFileKey(media.ID)
+	if err := u.storage.PutThumbnail(
+		ctx,
+		mediadto.NewThumbnailObjectKey(userID, media.ID),
+		bytes.NewReader(thumbBytes),
+		int64(len(thumbBytes)),
+		"image/jpeg",
+	); err != nil {
+		return err
+	}
+
+	media.Thumbnail = thumbKey
+	return (*u.mediaRepo).Update(ctx, media)
+}

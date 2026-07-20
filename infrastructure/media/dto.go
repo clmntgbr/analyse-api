@@ -84,6 +84,24 @@ func IsImageContentType(contentType string) bool {
 	return strings.HasPrefix(contentType, "image/")
 }
 
+func IsVideoContentType(contentType string) bool {
+	return strings.HasPrefix(contentType, "video/")
+}
+
+const maxVideoFrames = 10
+
+func MaxVideoFrames() int {
+	return maxVideoFrames
+}
+
+func NewFrameFileKey() string {
+	return "frames/" + uuid.NewString() + ".jpg"
+}
+
+func IsFrameObjectKey(decodedKey string) bool {
+	return strings.Contains(decodedKey, "/frames/")
+}
+
 func NewFileKey(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
 	return uuid.NewString() + ext
