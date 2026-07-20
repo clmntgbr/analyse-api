@@ -1,4 +1,4 @@
-package media
+package analysis
 
 import (
 	"context"
@@ -18,17 +18,20 @@ import (
 var ErrUnsupportedMediaType = errors.New("unsupported media type")
 
 type GeneratePresignedUploadUrlUseCase struct {
-	storage   *storage.MinIOStorage
-	mediaRepo *repository.MediaRepository
+	storage      *storage.MinIOStorage
+	analysisRepo *repository.AnalysisRepository
+	mediaRepo    *repository.MediaRepository
 }
 
 func NewGeneratePresignedUploadUrlUseCase(
 	storage *storage.MinIOStorage,
+	analysisRepo *repository.AnalysisRepository,
 	mediaRepo *repository.MediaRepository,
 ) *GeneratePresignedUploadUrlUseCase {
 	return &GeneratePresignedUploadUrlUseCase{
-		storage:   storage,
-		mediaRepo: mediaRepo,
+		storage:      storage,
+		analysisRepo: analysisRepo,
+		mediaRepo:    mediaRepo,
 	}
 }
 
@@ -41,7 +44,15 @@ func (uc *GeneratePresignedUploadUrlUseCase) Execute(ctx context.Context, userID
 	objectKey := mediadto.NewObjectKey(userID, fileKey)
 	filename := filepath.Base(input.Filename)
 
+	analysisEntity := entity.Analysis{
+		UserID: userID,
+	}
+	if err := (*uc.analysisRepo).Create(ctx, &analysisEntity); err != nil {
+		return "", errors.New("failed to create analysis")
+	}
+
 	media := entity.Media{
+		AnalysisID:  analysisEntity.ID,
 		UserID:      userID,
 		Key:         fileKey,
 		Filename:    filename,
@@ -50,7 +61,6 @@ func (uc *GeneratePresignedUploadUrlUseCase) Execute(ctx context.Context, userID
 		Status:      enum.MediaStatusProcessing,
 		Statuses:    []enum.MediaStatus{enum.MediaStatusProcessing},
 	}
-
 	if err := (*uc.mediaRepo).Create(ctx, &media); err != nil {
 		return "", errors.New("failed to create media")
 	}

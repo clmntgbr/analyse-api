@@ -14,6 +14,7 @@ const (
 
 type MediaEvent struct {
 	Type       string          `json:"type"`
+	AnalysisID string          `json:"analysisId"`
 	MediaID    string          `json:"mediaId"`
 	UserID     string          `json:"userId"`
 	Status     string          `json:"status"`
@@ -37,28 +38,30 @@ func NewAnalysisStartedEvent(media *entity.Media) (MediaEvent, error) {
 	}
 
 	return MediaEvent{
-		Type:      EventAnalysisStarted,
-		MediaID:   media.ID.String(),
-		UserID:    media.UserID.String(),
-		Status:    string(media.Status),
-		UpdatedAt: media.UpdatedAt,
+		Type:       EventAnalysisStarted,
+		AnalysisID: media.AnalysisID.String(),
+		MediaID:    media.ID.String(),
+		UserID:     media.UserID.String(),
+		Status:     string(media.Status),
+		UpdatedAt:  media.UpdatedAt,
 	}, nil
 }
 
-func NewAnalysisCompletedEvent(media *entity.Media, signals []*entity.Signal) (MediaEvent, error) {
-	if media == nil {
+func NewAnalysisCompletedEvent(analysis *entity.Analysis, media *entity.Media, signals []*entity.Signal) (MediaEvent, error) {
+	if analysis == nil || media == nil {
 		return MediaEvent{}, ErrInvalidMedia
 	}
 
 	event := MediaEvent{
 		Type:       EventAnalysisCompleted,
+		AnalysisID: analysis.ID.String(),
 		MediaID:    media.ID.String(),
-		UserID:     media.UserID.String(),
+		UserID:     analysis.UserID.String(),
 		Status:     string(media.Status),
-		FinalScore: media.FinalScore,
-		Confidence: string(media.AnalysisConfidence),
-		Verdict:    media.Verdict,
-		UpdatedAt:  media.UpdatedAt,
+		FinalScore: analysis.FinalScore,
+		Confidence: string(analysis.AnalysisConfidence),
+		Verdict:    analysis.Verdict,
+		UpdatedAt:  analysis.UpdatedAt,
 		Signals:    make([]SignalPayload, 0, len(signals)),
 	}
 

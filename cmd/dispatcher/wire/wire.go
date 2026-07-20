@@ -28,9 +28,10 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	centrifugoPublisher := centrifugo.NewPublisher(env)
 
 	mediaRepo := repoGorm.NewMediaRepository(db)
+	analysisRepo := repoGorm.NewAnalysisRepository(db)
 	signalRepo := repoGorm.NewSignalRepository(db)
 
-	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &signalRepo, centrifugoPublisher)
+	aggregateAnalysisUseCase := pipelineuc.NewAggregateAnalysisUseCase(&mediaRepo, &analysisRepo, &signalRepo, centrifugoPublisher)
 	dispatcher := pipelineuc.NewDispatcher(env, &mediaRepo, publisher, aggregateAnalysisUseCase)
 
 	parser := security.NewWorkerParser(env)

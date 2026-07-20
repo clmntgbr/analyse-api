@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-type GeneratePresignedUploadUrlDetailResponse struct {
-	UploadURL string `json:"uploadUrl"`
-}
-
 type SignalResponse struct {
 	Name       string   `json:"name"`
 	Score      int      `json:"score"`
@@ -23,61 +19,48 @@ type InsightResponse struct {
 	Histogram   float64 `json:"histogram"`
 }
 
-type MediaListResponse struct {
-	ID         string    `json:"id"`
-	Key        string    `json:"key"`
-	Filename   string    `json:"filename"`
-	Thumbnail  string    `json:"thumbnail"`
-	Status     string    `json:"status"`
-	FinalScore float64   `json:"finalScore,omitempty"`
-	Confidence string    `json:"confidence,omitempty"`
-	Verdict    string    `json:"verdict,omitempty"`
-	Size       int64     `json:"size,omitempty"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+type MediaItemResponse struct {
+	ID          string           `json:"id"`
+	Key         string           `json:"key"`
+	Filename    string           `json:"filename"`
+	Thumbnail   string           `json:"thumbnail"`
+	ContentType string           `json:"contentType"`
+	Status      string           `json:"status"`
+	Signals     []SignalResponse `json:"signals,omitempty"`
+	Insight     *InsightResponse `json:"insight,omitempty"`
+	Size        int64            `json:"size,omitempty"`
+	CreatedAt   time.Time        `json:"createdAt"`
+	UpdatedAt   time.Time        `json:"updatedAt"`
 }
 
-type MediaDetailResponse struct {
-	ID         string           `json:"id"`
-	Key        string           `json:"key"`
-	Filename   string           `json:"filename"`
-	Thumbnail  string           `json:"thumbnail"`
-	Status     string           `json:"status"`
-	FinalScore float64          `json:"finalScore,omitempty"`
-	Confidence string           `json:"confidence,omitempty"`
-	Verdict    string           `json:"verdict,omitempty"`
-	Signals    []SignalResponse `json:"signals,omitempty"`
-	Insight    InsightResponse  `json:"insight,omitempty"`
-	Size       int64            `json:"size,omitempty"`
-	CreatedAt  time.Time        `json:"createdAt"`
-	UpdatedAt  time.Time        `json:"updatedAt"`
+func NewMediaItemResponse(media entity.Media) MediaItemResponse {
+	item := MediaItemResponse{
+		ID:          media.ID.String(),
+		Key:         media.Key,
+		Filename:    media.Filename,
+		Thumbnail:   thumbnailURL(media),
+		ContentType: media.ContentType,
+		Status:      string(media.Status),
+		Signals:     NewSignalResponses(media.Signals),
+		Size:        media.Size,
+		CreatedAt:   media.CreatedAt,
+		UpdatedAt:   media.UpdatedAt,
+	}
+
+	if media.Insight != nil {
+		insight := NewInsightResponse(media.Insight)
+		item.Insight = &insight
+	}
+
+	return item
 }
 
-func NewGeneratePresignedUploadUrlDetailResponse(url string) GeneratePresignedUploadUrlDetailResponse {
-	return GeneratePresignedUploadUrlDetailResponse{
-		UploadURL: url,
+func NewMediaItemResponses(medias []entity.Media) []MediaItemResponse {
+	items := make([]MediaItemResponse, 0, len(medias))
+	for _, media := range medias {
+		items = append(items, NewMediaItemResponse(media))
 	}
-}
-
-func NewMediaListResponse(media *entity.Media) *MediaListResponse {
-	response := &MediaListResponse{
-		ID:        media.ID.String(),
-		Key:       media.Key,
-		Filename:  media.Filename,
-		Thumbnail: thumbnailURL(media),
-		Status:    string(media.Status),
-		Size:      media.Size,
-		CreatedAt: media.CreatedAt,
-		UpdatedAt: media.UpdatedAt,
-	}
-
-	if media.Verdict != "" {
-		response.FinalScore = media.FinalScore
-		response.Confidence = string(media.AnalysisConfidence)
-		response.Verdict = media.Verdict
-	}
-
-	return response
+	return items
 }
 
 func NewSignalResponses(signals []entity.Signal) []SignalResponse {
@@ -103,49 +86,10 @@ func NewInsightResponse(insight *entity.Insight) InsightResponse {
 	}
 }
 
-func NewMediaDetailResponse(media *entity.Media) *MediaDetailResponse {
-	response := &MediaDetailResponse{
-		ID:         media.ID.String(),
-		Key:        media.Key,
-		Filename:   media.Filename,
-		Thumbnail:  thumbnailURL(media),
-		Status:     string(media.Status),
-		FinalScore: media.FinalScore,
-		Confidence: string(media.AnalysisConfidence),
-		Verdict:    media.Verdict,
-		Signals:    NewSignalResponses(media.Signals),
-		Size:       media.Size,
-		CreatedAt:  media.CreatedAt,
-		UpdatedAt:  media.UpdatedAt,
-	}
-
-	if media.Insight != nil {
-		response.Insight = NewInsightResponse(media.Insight)
-	}
-
-	return response
-}
-
-func NewMediaDetailResponses(medias []*entity.Media) []*MediaDetailResponse {
-	mediaDetailResponses := make([]*MediaDetailResponse, len(medias))
-	for i, media := range medias {
-		mediaDetailResponses[i] = NewMediaDetailResponse(media)
-	}
-	return mediaDetailResponses
-}
-
-func thumbnailURL(media *entity.Media) string {
+func thumbnailURL(media entity.Media) string {
 	if media.Thumbnail == "" {
 		return ""
 	}
 
 	return "/api/medias/" + media.ID.String() + "/thumbnail"
-}
-
-func NewMediaListResponses(medias []*entity.Media) []*MediaListResponse {
-	mediaListResponses := make([]*MediaListResponse, len(medias))
-	for i, media := range medias {
-		mediaListResponses[i] = NewMediaListResponse(media)
-	}
-	return mediaListResponses
 }

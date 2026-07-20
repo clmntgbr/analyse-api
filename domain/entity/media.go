@@ -10,6 +10,9 @@ import (
 type Media struct {
 	ID uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 
+	AnalysisID uuid.UUID `gorm:"type:uuid;index:idx_media_analysis_id" json:"analysis_id"`
+	Analysis   Analysis  `gorm:"foreignKey:AnalysisID" json:"-"`
+
 	UserID uuid.UUID `gorm:"type:uuid;not null" json:"user_id"`
 	User   User      `gorm:"foreignKey:UserID" json:"user"`
 
@@ -23,10 +26,6 @@ type Media struct {
 	Size        int64  `gorm:"not null" json:"size"`
 
 	Signals []Signal `gorm:"foreignKey:MediaID" json:"signals"`
-
-	FinalScore         float64         `gorm:"default:-1" json:"final_score"`
-	AnalysisConfidence ConfidenceLevel `gorm:"type:varchar(20);default:'unknown'" json:"confidence"`
-	Verdict            string          `gorm:"type:varchar(20);default:''" json:"verdict"`
 
 	Status   enum.MediaStatus   `gorm:"type:varchar(20);not null;check:status IN ('processing','uploaded','analyzed');index:idx_media_status" json:"status"`
 	Statuses []enum.MediaStatus `gorm:"serializer:json;type:jsonb;default:'[]'" json:"statuses"`

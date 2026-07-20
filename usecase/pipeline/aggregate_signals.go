@@ -17,17 +17,20 @@ var requiredSignalNames = []string{"metadata", "heuristics", "ai_model"}
 
 type AggregateAnalysisUseCase struct {
 	mediaRepo           *repository.MediaRepository
+	analysisRepo        *repository.AnalysisRepository
 	signalRepo          *repository.SignalRepository
 	centrifugoPublisher *centrifugo.Publisher
 }
 
 func NewAggregateAnalysisUseCase(
 	mediaRepo *repository.MediaRepository,
+	analysisRepo *repository.AnalysisRepository,
 	signalRepo *repository.SignalRepository,
 	centrifugoPublisher *centrifugo.Publisher,
 ) *AggregateAnalysisUseCase {
 	return &AggregateAnalysisUseCase{
 		mediaRepo:           mediaRepo,
+		analysisRepo:        analysisRepo,
 		signalRepo:          signalRepo,
 		centrifugoPublisher: centrifugoPublisher,
 	}
@@ -50,22 +53,30 @@ func (u *AggregateAnalysisUseCase) Execute(ctx context.Context, mediaID uuid.UUI
 
 	result := aggregate.Compute(toEntitySignals(signals))
 
-	media.FinalScore = result.FinalScore
-	media.AnalysisConfidence = result.Confidence
-	media.Verdict = result.Verdict
 	media.Statuses = append(media.Statuses, enum.MediaStatusAnalyzed)
 	media.Status = enum.MediaStatusAnalyzed
-
 	if err := (*u.mediaRepo).Update(ctx, media); err != nil {
 		return err
 	}
 
-	realtimeEvent, err := centrifugo.NewAnalysisCompletedEvent(media, signals)
+	analysis, err := (*u.analysisRepo).GetByID(ctx, media.AnalysisID)
+	if err != nil {
+		return errors.New("analysis not found")
+	}
+
+	analysis.FinalScore = result.FinalScore
+	analysis.AnalysisConfidence = result.Confidence
+	analysis.Verdict = result.Verdict
+	if err := (*u.analysisRepo).Update(ctx, analysis); err != nil {
+		return err
+	}
+
+	realtimeEvent, err := centrifugo.NewAnalysisCompletedEvent(analysis, media, signals)
 	if err != nil {
 		return errors.New("failed to build analysis completed event")
 	}
 
-	if err := u.centrifugoPublisher.PublishToUser(ctx, media.UserID, realtimeEvent); err != nil {
+	if err := u.centrifugoPublisher.PublishToUser(ctx, analysis.UserID, realtimeEvent); err != nil {
 		return errors.New("failed to publish analysis completed event")
 	}
 

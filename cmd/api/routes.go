@@ -37,6 +37,7 @@ func setupAPIRoutes(app *fiber.App, container *wire.Container) {
 
 	api.Use(container.AuthenticateMiddleware.Protected())
 	setupUsersRoutes(api, container)
+	setupAnalysisRoutes(api, container)
 	setupMediaRoutes(api, container)
 	setupRealtimeRoutes(api, container)
 }
@@ -49,10 +50,13 @@ func setupUsersRoutes(api fiber.Router, container *wire.Container) {
 	api.Get("/users/me", container.UserHandler.GetUser)
 }
 
+func setupAnalysisRoutes(api fiber.Router, container *wire.Container) {
+	api.Post("/analyses/presign-upload-url", container.AnalysisHandler.GeneratePresignedUploadUrl)
+	api.Get("/analyses/statistics", container.AnalysisHandler.GetStatistics)
+	api.Get("/analyses", container.AnalysisHandler.GetAnalyses)
+	api.Get("/analyses/:id", container.AnalysisHandler.GetAnalysis)
+}
+
 func setupMediaRoutes(api fiber.Router, container *wire.Container) {
-	api.Post("/media/presign-upload-url", container.MediaHandler.GeneratePresignedUploadUrl)
-	api.Get("/medias", container.MediaHandler.GetMedias)
-	api.Get("/statistics", container.MediaHandler.GetStatistics)
-	api.Get("/medias/:id", container.MediaHandler.GetMedia)
 	api.Get("/medias/:id/thumbnail", container.MediaHandler.GetThumbnail)
 }

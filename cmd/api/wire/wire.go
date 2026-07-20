@@ -9,6 +9,7 @@ import (
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/storage"
 	repoGorm "go-api/repository/gorm"
+	"go-api/usecase/analysis"
 	"go-api/usecase/auth"
 	"go-api/usecase/clerk"
 	"go-api/usecase/media"
@@ -26,6 +27,7 @@ type Container struct {
 	ClerkHandler           *handler.ClerkHandler
 	MinIOHandler           *handler.MinIOHandler
 	UserHandler            *handler.UserHandler
+	AnalysisHandler        *handler.AnalysisHandler
 	MediaHandler           *handler.MediaHandler
 	RealtimeHandler        *handler.RealtimeHandler
 }
@@ -45,6 +47,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 
 	userRepo := repoGorm.NewUserRepository(db)
 	mediaRepo := repoGorm.NewMediaRepository(db)
+	analysisRepo := repoGorm.NewAnalysisRepository(db)
 
 	publisher := rabbitmq.NewLazyPublisherFromEnv(env)
 	centrifugoPublisher := centrifugo.NewPublisher(env)
@@ -56,11 +59,12 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	updateUserUseCase := user.NewUpdateUserUseCase(&userRepo)
 	deleteUserByClerkIDUseCase := user.NewDeleteUserByClerkIDUseCase(&userRepo)
 
-	createMediaUseCase := media.NewCreateMediaUseCase(&mediaRepo)
-	generatePresignedUploadUrlUseCase := media.NewGeneratePresignedUploadUrlUseCase(storageClient, &mediaRepo)
-	getMediasUseCase := media.NewGetMediasUseCase(&mediaRepo)
-	getMediaUseCase := media.NewGetMediaUseCase(&mediaRepo)
-	getMediaStatisticsUseCase := media.NewGetMediaStatisticsUseCase(&mediaRepo)
+	createMediaUseCase := media.NewCreateMediaUseCase(&analysisRepo, &mediaRepo)
+	generatePresignedUploadUrlUseCase := analysis.NewGeneratePresignedUploadUrlUseCase(storageClient, &analysisRepo, &mediaRepo)
+	getAnalysesUseCase := analysis.NewGetAnalysesUseCase(&analysisRepo)
+	getAnalysisUseCase := analysis.NewGetAnalysisUseCase(&analysisRepo)
+	getStatisticsUseCase := analysis.NewGetStatisticsUseCase(&analysisRepo)
+	getMediaByIDUseCase := media.NewGetMediaByIDUseCase(&mediaRepo)
 	generateImageThumbnailUseCase := thumbnail.NewGenerateImageThumbnailUseCase()
 	generateThumbnailUseCase := media.NewGenerateThumbnailUseCase(storageClient, &mediaRepo, generateImageThumbnailUseCase)
 	publishMetadataUseCase := media.NewPublishMetadataUseCase(&mediaRepo, publisher, centrifugoPublisher, env)
@@ -93,12 +97,15 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			publishMetadataUseCase,
 		),
 		UserHandler: handler.NewUserHandler(),
+		AnalysisHandler: handler.NewAnalysisHandler(
+			generatePresignedUploadUrlUseCase,
+			getAnalysisUseCase,
+			getAnalysesUseCase,
+			getStatisticsUseCase,
+		),
 		MediaHandler: handler.NewMediaHandler(
 			storageClient,
-			generatePresignedUploadUrlUseCase,
-			getMediaUseCase,
-			getMediasUseCase,
-			getMediaStatisticsUseCase,
+			getMediaByIDUseCase,
 		),
 		RealtimeHandler: handler.NewRealtimeHandler(env),
 	}

@@ -11,11 +11,18 @@ import (
 )
 
 type CreateMediaUseCase struct {
-	mediaRepo *repository.MediaRepository
+	analysisRepo *repository.AnalysisRepository
+	mediaRepo    *repository.MediaRepository
 }
 
-func NewCreateMediaUseCase(mediaRepo *repository.MediaRepository) *CreateMediaUseCase {
-	return &CreateMediaUseCase{mediaRepo: mediaRepo}
+func NewCreateMediaUseCase(
+	analysisRepo *repository.AnalysisRepository,
+	mediaRepo *repository.MediaRepository,
+) *CreateMediaUseCase {
+	return &CreateMediaUseCase{
+		analysisRepo: analysisRepo,
+		mediaRepo:    mediaRepo,
+	}
 }
 
 func (u *CreateMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, key string, contentType string, size int64) (*entity.Media, error) {
@@ -29,7 +36,15 @@ func (u *CreateMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, key 
 		return existing, nil
 	}
 
+	analysis := entity.Analysis{
+		UserID: userID,
+	}
+	if err := (*u.analysisRepo).Create(ctx, &analysis); err != nil {
+		return nil, errors.New("failed to create analysis")
+	}
+
 	media := entity.Media{
+		AnalysisID:  analysis.ID,
 		UserID:      userID,
 		Key:         key,
 		ContentType: contentType,
@@ -37,7 +52,6 @@ func (u *CreateMediaUseCase) Execute(ctx context.Context, userID uuid.UUID, key 
 		Status:      enum.MediaStatusProcessing,
 		Statuses:    []enum.MediaStatus{enum.MediaStatusProcessing},
 	}
-
 	if err := (*u.mediaRepo).Create(ctx, &media); err != nil {
 		return nil, errors.New("failed to create media")
 	}

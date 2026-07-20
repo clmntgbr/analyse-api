@@ -22,6 +22,7 @@ func NewMigrateCommand() *cobra.Command {
 				if err := tx.AutoMigrate(
 					&entity.User{},
 					&entity.Insight{},
+					&entity.Analysis{},
 					&entity.Media{},
 					&entity.Signal{},
 				); err != nil {
