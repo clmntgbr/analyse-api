@@ -1,6 +1,7 @@
 package command
 
 import (
+	"embed"
 	"fmt"
 	"go-api/domain/entity"
 	"go-api/infrastructure/config"
@@ -8,6 +9,9 @@ import (
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 )
+
+//go:embed sql/*.sql
+var sqlFiles embed.FS
 
 func NewMigrateCommand() *cobra.Command {
 	return &cobra.Command{
@@ -25,12 +29,23 @@ func NewMigrateCommand() *cobra.Command {
 					&entity.Analysis{},
 					&entity.Media{},
 					&entity.Signal{},
+					&entity.Plan{},
+					&entity.Quota{},
+					&entity.Subscription{},
 				); err != nil {
 					return err
 				}
 
-				// GORM AutoMigrate does not drop NOT NULL on existing columns.
-				return tx.Exec(`ALTER TABLE medias ALTER COLUMN insight_id DROP NOT NULL`).Error
+				plansSQL, err := sqlFiles.ReadFile("sql/plans.sql")
+				if err != nil {
+					return fmt.Errorf("failed to read plans.sql: %w", err)
+				}
+
+				if err := tx.Exec(string(plansSQL)).Error; err != nil {
+					return fmt.Errorf("failed to seed plans: %w", err)
+				}
+
+				return nil
 			})
 
 			if err != nil {
