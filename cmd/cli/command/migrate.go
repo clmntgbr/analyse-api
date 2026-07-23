@@ -29,8 +29,8 @@ func NewMigrateCommand() *cobra.Command {
 					&entity.Analysis{},
 					&entity.Media{},
 					&entity.Signal{},
-					&entity.Plan{},
 					&entity.Quota{},
+					&entity.Plan{},
 					&entity.Subscription{},
 				); err != nil {
 					return err

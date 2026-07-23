@@ -7,9 +7,7 @@ import (
 )
 
 type Quota struct {
-	ID     uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	PlanID uuid.UUID `gorm:"type:uuid;not null" json:"plan_id"`
-	Plan   Plan      `gorm:"foreignKey:PlanID" json:"plan"`
+	ID uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 
 	MaxImagesPerMonth int           `json:"max_images_per_month"`
 	MaxVideosPerMonth int           `json:"max_videos_per_month"`

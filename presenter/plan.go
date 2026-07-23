@@ -6,16 +6,17 @@ import (
 )
 
 type PlanResponse struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	Price           float64   `json:"price"`
-	Currency        string    `json:"currency"`
-	BillingInterval string    `json:"billingInterval"`
-	Description     string    `json:"description"`
-	Slug            string    `json:"slug"`
-	IsActive        bool      `json:"isActive"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ID              string         `json:"id"`
+	Name            string         `json:"name"`
+	Price           float64        `json:"price"`
+	Currency        string         `json:"currency"`
+	BillingInterval string         `json:"billingInterval"`
+	Description     string         `json:"description"`
+	Slug            string         `json:"slug"`
+	IsActive        bool           `json:"isActive"`
+	Quota           *QuotaResponse `json:"quota"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
 }
 
 func NewPlanResponse(plan *entity.Plan) *PlanResponse {
@@ -28,6 +29,7 @@ func NewPlanResponse(plan *entity.Plan) *PlanResponse {
 		Description:     plan.Description,
 		Slug:            plan.Slug,
 		IsActive:        plan.IsActive,
+		Quota:           NewQuotaResponse(&plan.Quota),
 		CreatedAt:       plan.CreatedAt,
 		UpdatedAt:       plan.UpdatedAt,
 	}

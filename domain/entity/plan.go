@@ -34,6 +34,9 @@ type Plan struct {
 	Price           float64         `json:"price" gorm:"type:decimal(10,2);not null;default:0"`
 	Currency        Currency        `json:"currency" gorm:"type:varchar(255);not null;default:'EUR'"`
 
+	QuotaID uuid.UUID `gorm:"type:uuid;not null;index:idx_plan_quota_id" json:"quota_id"`
+	Quota   Quota     `gorm:"foreignKey:QuotaID" json:"quota"`
+
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

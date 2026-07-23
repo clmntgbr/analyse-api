@@ -32,6 +32,7 @@ func (r *planRepository) Delete(ctx context.Context, id uuid.UUID) error {
 func (r *planRepository) GetAll(ctx context.Context) ([]*entity.Plan, error) {
 	var plans []*entity.Plan
 	err := dbWithContext(ctx, r.db).
+		Preload("Quota").
 		Find(&plans).Error
 	if err != nil {
 		return nil, err
