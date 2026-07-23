@@ -31,7 +31,7 @@ type Plan struct {
 	IsActive bool `json:"is_active" gorm:"type:boolean;not null"`
 
 	BillingInterval BillingInterval `json:"billing_interval" gorm:"type:varchar(255);not null;default:'month'"`
-	Price           int64           `json:"price" gorm:"type:bigint;not null;default:0"`
+	Price           float64         `json:"price" gorm:"type:decimal(10,2);not null;default:0"`
 	Currency        Currency        `json:"currency" gorm:"type:varchar(255);not null;default:'EUR'"`
 
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`

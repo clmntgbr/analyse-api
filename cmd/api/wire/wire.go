@@ -3,8 +3,8 @@ package wire
 import (
 	"go-api/handler"
 	"go-api/handler/middleware"
-	infraClerk "go-api/infrastructure/clerk"
 	"go-api/infrastructure/centrifugo"
+	infraClerk "go-api/infrastructure/clerk"
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/storage"
@@ -14,6 +14,7 @@ import (
 	"go-api/usecase/auth"
 	"go-api/usecase/clerk"
 	"go-api/usecase/media"
+	"go-api/usecase/plan"
 	"go-api/usecase/thumbnail"
 	"go-api/usecase/user"
 	"log"
@@ -31,6 +32,7 @@ type Container struct {
 	AnalysisHandler        *handler.AnalysisHandler
 	MediaHandler           *handler.MediaHandler
 	RealtimeHandler        *handler.RealtimeHandler
+	PlanHandler            *handler.PlanHandler
 }
 
 func NewContainer(db *gorm.DB, env *config.Config) *Container {
@@ -49,6 +51,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	userRepo := repoGorm.NewUserRepository(db)
 	mediaRepo := repoGorm.NewMediaRepository(db)
 	analysisRepo := repoGorm.NewAnalysisRepository(db)
+	planRepo := repoGorm.NewPlanRepository(db)
 
 	publisher := rabbitmq.NewLazyPublisherFromEnv(env)
 	centrifugoPublisher := centrifugo.NewPublisher(env)
@@ -81,6 +84,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		frameExtractor,
 		generateImageThumbnailUseCase,
 	)
+
+	getPlansUseCase := plan.NewGetPlansUseCase(&planRepo)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -117,5 +122,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 			getMediaByIDUseCase,
 		),
 		RealtimeHandler: handler.NewRealtimeHandler(env),
+		PlanHandler: handler.NewPlanHandler(
+			getPlansUseCase,
+		),
 	}
 }

@@ -35,6 +35,10 @@ func setupHealthChecks(app *fiber.App) {
 func setupAPIRoutes(app *fiber.App, container *wire.Container) {
 	api := app.Group("/api")
 
+	// Public routes
+	setupPlanRoutes(api, container)
+
+	// Protected routes
 	api.Use(container.AuthenticateMiddleware.Protected())
 	setupUsersRoutes(api, container)
 	setupAnalysisRoutes(api, container)
@@ -59,4 +63,8 @@ func setupAnalysisRoutes(api fiber.Router, container *wire.Container) {
 
 func setupMediaRoutes(api fiber.Router, container *wire.Container) {
 	api.Get("/medias/:id/thumbnail", container.MediaHandler.GetThumbnail)
+}
+
+func setupPlanRoutes(api fiber.Router, container *wire.Container) {
+	api.Get("/plans", container.PlanHandler.GetPlans)
 }
