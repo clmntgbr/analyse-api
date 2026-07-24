@@ -41,9 +41,14 @@ func setupAPIRoutes(app *fiber.App, container *wire.Container) {
 	// Protected routes
 	api.Use(container.AuthenticateMiddleware.Protected())
 	setupUsersRoutes(api, container)
+	setupSubscriptionRoutes(api, container)
 	setupAnalysisRoutes(api, container)
 	setupMediaRoutes(api, container)
 	setupRealtimeRoutes(api, container)
+}
+
+func setupSubscriptionRoutes(api fiber.Router, container *wire.Container) {
+	api.Post("/subscriptions", container.SubscriptionHandler.CreateSubscription)
 }
 
 func setupRealtimeRoutes(api fiber.Router, container *wire.Container) {

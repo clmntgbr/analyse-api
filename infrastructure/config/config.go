@@ -55,6 +55,10 @@ type Config struct {
 	CentrifugoAPIKey      string
 	CentrifugoTokenSecret string
 	CentrifugoPublicWSURL string
+
+	StripeSecretKey     string
+	RedirectSuccessURL  string
+	RedirectCancelURL   string
 }
 
 func Load() *Config {
@@ -108,6 +112,10 @@ func Load() *Config {
 		CentrifugoAPIKey:      getEnvOrDefault("CENTRIFUGO_API_KEY", ""),
 		CentrifugoTokenSecret: getEnvOrDefault("CENTRIFUGO_TOKEN_SECRET", ""),
 		CentrifugoPublicWSURL: getEnvOrDefault("CENTRIFUGO_PUBLIC_WS_URL", "ws://localhost:8000/connection/websocket"),
+
+		StripeSecretKey:    getEnvOrDefault("STRIPE_SECRET_KEY", ""),
+		RedirectSuccessURL: getEnvOrDefault("REDIRECT_SUCCESS_URL", "http://localhost:3000/subscription/success"),
+		RedirectCancelURL:  getEnvOrDefault("REDIRECT_CANCEL_URL", "http://localhost:3000/subscription/failed"),
 	}
 }
 

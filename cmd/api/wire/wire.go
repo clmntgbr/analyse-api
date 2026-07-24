@@ -8,6 +8,7 @@ import (
 	"go-api/infrastructure/config"
 	"go-api/infrastructure/messaging/rabbitmq"
 	"go-api/infrastructure/storage"
+	infraStripe "go-api/infrastructure/stripe"
 	"go-api/infrastructure/video"
 	repoGorm "go-api/repository/gorm"
 	"go-api/usecase/analysis"
@@ -34,6 +35,7 @@ type Container struct {
 	MediaHandler           *handler.MediaHandler
 	RealtimeHandler        *handler.RealtimeHandler
 	PlanHandler            *handler.PlanHandler
+	SubscriptionHandler    *handler.SubscriptionHandler
 }
 
 func NewContainer(db *gorm.DB, env *config.Config) *Container {
@@ -89,6 +91,12 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	)
 
 	getPlansUseCase := plan.NewGetPlansUseCase(&planRepo)
+	checkoutSessionGateway := infraStripe.NewCheckoutSessionGateway(env)
+	createSubscriptionUseCase := subscription.NewCreateSubscriptionUseCase(
+		&planRepo,
+		fetchUserUseCase,
+		checkoutSessionGateway,
+	)
 
 	clerkMiddleware := middleware.NewClerkMiddleware(env.ClerkWebhookSecret)
 	minIOMiddleware := middleware.NewMinIOMiddleware(env.MinIOWebhookSecret)
@@ -127,6 +135,9 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 		RealtimeHandler: handler.NewRealtimeHandler(env),
 		PlanHandler: handler.NewPlanHandler(
 			getPlansUseCase,
+		),
+		SubscriptionHandler: handler.NewSubscriptionHandler(
+			createSubscriptionUseCase,
 		),
 	}
 }
