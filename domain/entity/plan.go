@@ -13,6 +13,8 @@ const (
 	BillingIntervalYear  BillingInterval = "year"
 )
 
+const FreePlanSlug = "free"
+
 type Currency string
 
 const (

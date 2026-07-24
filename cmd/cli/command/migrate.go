@@ -24,14 +24,14 @@ func NewMigrateCommand() *cobra.Command {
 
 			err := db.Transaction(func(tx *gorm.DB) error {
 				if err := tx.AutoMigrate(
+					&entity.Quota{},
+					&entity.Plan{},
+					&entity.Subscription{},
 					&entity.User{},
 					&entity.Insight{},
 					&entity.Analysis{},
 					&entity.Media{},
 					&entity.Signal{},
-					&entity.Quota{},
-					&entity.Plan{},
-					&entity.Subscription{},
 				); err != nil {
 					return err
 				}

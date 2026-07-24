@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"errors"
 	"go-api/domain/entity"
 	"go-api/domain/repository"
 
@@ -38,4 +39,19 @@ func (r *planRepository) GetAll(ctx context.Context) ([]*entity.Plan, error) {
 		return nil, err
 	}
 	return plans, nil
+}
+
+func (r *planRepository) GetBySlug(ctx context.Context, slug string) (*entity.Plan, error) {
+	var plan entity.Plan
+	err := dbWithContext(ctx, r.db).
+		Preload("Quota").
+		Where("slug = ?", slug).
+		First(&plan).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &plan, nil
 }

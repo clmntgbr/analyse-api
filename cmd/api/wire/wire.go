@@ -15,6 +15,7 @@ import (
 	"go-api/usecase/clerk"
 	"go-api/usecase/media"
 	"go-api/usecase/plan"
+	"go-api/usecase/subscription"
 	"go-api/usecase/thumbnail"
 	"go-api/usecase/user"
 	"log"
@@ -52,6 +53,7 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	mediaRepo := repoGorm.NewMediaRepository(db)
 	analysisRepo := repoGorm.NewAnalysisRepository(db)
 	planRepo := repoGorm.NewPlanRepository(db)
+	subscriptionRepo := repoGorm.NewSubscriptionRepository(db)
 
 	publisher := rabbitmq.NewLazyPublisherFromEnv(env)
 	centrifugoPublisher := centrifugo.NewPublisher(env)
@@ -59,7 +61,8 @@ func NewContainer(db *gorm.DB, env *config.Config) *Container {
 	validateTokenUseCase := auth.NewValidateTokenUseCase(jwksProvider, &userRepo)
 	fetchUserUseCase := clerk.NewFetchUserUseCase(env)
 	getUserByClerkIDUseCase := user.NewGetUserByClerkIDUseCase(&userRepo)
-	createUserUseCase := user.NewCreateUserUseCase(&userRepo)
+	createFreeSubscriptionUseCase := subscription.NewCreateFreeSubscriptionUseCase(&planRepo, &subscriptionRepo, &userRepo)
+	createUserUseCase := user.NewCreateUserUseCase(&userRepo, createFreeSubscriptionUseCase)
 	updateUserUseCase := user.NewUpdateUserUseCase(&userRepo)
 	deleteUserByClerkIDUseCase := user.NewDeleteUserByClerkIDUseCase(&userRepo)
 
